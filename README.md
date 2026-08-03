@@ -47,64 +47,9 @@ npm start
 - **`sitemap.xml`** built from Site URL + blog + freebies + **dev-tools** (`/dev-tools` and each utility slug) + **`/llms.txt`**.
 - **404** uses `noindex`.
 
-## TorqStudio Interview Hub (`/hub`)
 
-Full-stack interview preparation and hiring surface (candidates + companies), co-located with the marketing site.
 
-### Features (high level)
 
-- **Landing & navigation** — Hero, candidate vs hiring CTAs, sidebar with TorqStudio agency CTA + modal.
-- **Candidate** — Filterable question bank (DSA / UI / quiz / frontend system design), Monaco editor, **Piston** runs (`/api/run`), graded submit (`/api/submit`) with optional **OpenAI** feedback, UI **iframe `srcDoc` preview**, **React Flow** system-design canvas, quizzes, preparation plans, progress stats.
-- **Hiring** — Rule-based interview set generator + **PDF export** (`@react-pdf/renderer`).
-- **Jobs & talent** — Job board API, talent pool opt-in with filters.
-- **Mock interviews** — Complimentary Calendly embed during launch; paid checkout code path kept for later.
-- **Community** — Per-question forums, static live-session copy (MVP).
-- **Pricing / access** — **Launch: full hub is free** (`HUB_ALL_FREE_LAUNCH = true` in `src/lib/hub/usage.ts`). Stripe + tier checks are disabled until you flip that flag.
-- **Auth** — **NextAuth.js** (credentials + optional Google/GitHub via env).
-- **Ops** — **Admin → Feature flags** (plus env kill-switches) for maintenance, marketing sections, header links, and WhatsApp chip — see `docs/ADMIN-KV.md`.
-- **Content** — Blog editor in admin: rich text, **Preview**, **Content score**, links, code blocks; public posts use sanitized HTML.
-
-### Hub setup
-
-1. **Environment** — Copy `.env.example` to `.env` and set at least:
-   - `DATABASE_URL` — **MongoDB** (local `mongodb://127.0.0.1:27017/your_db` or Atlas `mongodb+srv://.../your_db?retryWrites=true&w=majority`). The path **must** include the database name.
-   - `AUTH_SECRET` — `openssl rand -base64 32`
-   - Optional: `OPENAI_API_KEY`, OAuth client IDs/secrets, Stripe keys (see `.env.example`).
-2. **Database & seed** — Prisma uses **`db push`** for MongoDB (no SQL migrations folder in this setup).
-   ```bash
-   npx prisma db push
-   npm run db:seed
-   ```
-3. **Run**
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000/hub](http://localhost:3000/hub). Register at `/hub/register`, then sign in at `/hub/signin`.
-
-### MongoDB (Atlas / self-hosted)
-
-1. Create a cluster and database user; allow your app’s IP (or `0.0.0.0/0` for serverless hosts).
-2. Use a connection string whose path is **`/your_database_name`** (not an empty path before `?`).
-3. URL-encode special characters in the password.
-4. Run `npx prisma db push` after schema changes; use `npm run db:seed` to load demo questions and tags.
-
-### Stripe (INR) — optional (when not all-free)
-
-While `HUB_ALL_FREE_LAUNCH` is `true`, users are not charged; you can skip Stripe in `.env`.
-
-1. Create **Products / Prices** in [Stripe Dashboard](https://dashboard.stripe.com) in **INR** (recurring for Premium, one-time for mock interview).
-2. Put Price IDs in `STRIPE_PRICE_MONTHLY_INR`, `STRIPE_PRICE_YEARLY_INR`, `STRIPE_PRICE_MOCK_INR`.
-3. Add webhook endpoint pointing to `https://your-domain.com/api/webhooks/stripe` for `checkout.session.completed`; use signing secret as `STRIPE_WEBHOOK_SECRET`.
-4. Successful subscription checkout sets `subscriptionTier` to `premium` on the user (see `src/app/api/webhooks/stripe/route.ts`).
-
-### Vercel deployment (Interview Hub)
-
-1. **Project** — Import the repo; **Framework Preset**: Next.js.
-2. **Env vars** — Add all variables from `.env.example` in Vercel **Settings → Environment Variables** (Production + Preview as needed). Set `AUTH_URL` to `https://your-domain.com` if redirects misbehave.
-3. **Database** — Use [MongoDB Atlas](https://www.mongodb.com/atlas) (or any MongoDB reachable from Vercel); set `DATABASE_URL` to a `mongodb` or `mongodb+srv` URL with a database name in the path. Run **`npx prisma db push`** once against production (locally or in a release job) whenever the Prisma schema changes; the default build runs `prisma generate` only.
-4. **Build** — Default `npm run build` runs `prisma generate` via the `build` script.
-5. **Stripe webhook** — In Stripe, add the production webhook URL; redeploy after adding `STRIPE_WEBHOOK_SECRET`.
-6. **OAuth** — Add production callback URLs in Google/GitHub consoles: `https://your-domain.com/api/auth/callback/google` (and `/github`).
 
 ### API routes (hub)
 
