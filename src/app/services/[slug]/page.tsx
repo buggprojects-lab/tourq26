@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 import MarketingHeader from "@/components/MarketingHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
+import { BlockRenderer } from "@/components/cms/BlockRenderer";
 import { getServicePage, servicePages } from "@/data/services-content";
 import { publishedBlogPosts, readBlogPosts, readSiteContent } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site-url";
 import { breadcrumbListJsonLd, faqPageJsonLd, webPageJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
+import { getPublishedPageByPath, getPageBlocks } from "@/lib/cms/pages";
+import { buildPageJsonLd, buildPageMetadata } from "@/lib/cms/metadata";
 
 export async function generateStaticParams() {
   return servicePages.map((p) => ({ slug: p.slug }));
@@ -20,10 +23,18 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const page = getServicePage(slug);
-  if (!page) return { title: "Service not found", robots: { index: false, follow: false } };
   const site = await readSiteContent();
   const baseUrl = site.siteUrl.replace(/\/$/, "");
+
+  try {
+    const cms = await getPublishedPageByPath(`/services/${slug}`);
+    if (cms) return buildPageMetadata(cms, baseUrl);
+  } catch {
+    /* DB unavailable — fall back */
+  }
+
+  const page = getServicePage(slug);
+  if (!page) return { title: "Service not found", robots: { index: false, follow: false } };
   return {
     title: page.title,
     description: page.description,
@@ -43,6 +54,30 @@ export default async function ServiceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  try {
+    const cms = await getPublishedPageByPath(`/services/${slug}`);
+    if (cms) {
+      const siteUrl = await getSiteUrl();
+      const schemas = buildPageJsonLd(cms, siteUrl);
+      const blocks = getPageBlocks(cms);
+      return (
+        <div className="min-h-screen bg-background">
+          {schemas.map((data, i) => (
+            <JsonLd key={i} data={data} />
+          ))}
+          <MarketingHeader />
+          <main>
+            <BlockRenderer blocks={blocks} />
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+  } catch {
+    /* fall through to static */
+  }
+
   const page = getServicePage(slug);
   if (!page) notFound();
 
@@ -73,7 +108,6 @@ export default async function ServiceDetailPage({
       <JsonLd data={webLd} />
       <MarketingHeader />
       <main>
-        {/* Hero band — dark */}
         <section className="hero-band">
           <div className="relative z-10 mx-auto w-full max-w-[1280px] px-4 pt-32 pb-16 sm:px-6 sm:pt-36 sm:pb-20 lg:px-8 lg:pt-40 lg:pb-[80px]">
             <Link
@@ -100,7 +134,6 @@ export default async function ServiceDetailPage({
           </div>
         </section>
 
-        {/* Editorial body */}
         <section className="band-light border-t border-hairline">
           <div className="mx-auto w-full max-w-[1280px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-[80px]">
             <article className="grid gap-12 lg:grid-cols-12">
@@ -139,7 +172,6 @@ export default async function ServiceDetailPage({
           </div>
         </section>
 
-        {/* FAQ */}
         <section className="band-light border-t border-hairline">
           <div className="mx-auto w-full max-w-[1280px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-[80px]">
             <div className="grid gap-10 lg:grid-cols-12">
@@ -202,7 +234,6 @@ export default async function ServiceDetailPage({
           ]}
         />
 
-        {/* Closing CTA — dark band */}
         <section className="hero-band border-t border-[var(--brand-hairline-on-dark)]">
           <div className="relative z-10 mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-[80px]">
             <div className="lg:col-span-7">
