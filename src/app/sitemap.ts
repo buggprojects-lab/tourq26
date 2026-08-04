@@ -64,5 +64,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.72,
   }));
 
-  return [...staticPages, ...serviceUrls, ...caseStudyUrls, ...freebieUrls, ...blogUrls, ...techNewsUrls];
+  let cmsUrls: MetadataRoute.Sitemap = [];
+  try {
+    const { prisma } = await import("@/lib/db");
+    const cmsPages = await prisma.page.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        path: true,
+        updatedAt: true,
+        type: true,
+        seo: { select: { robotsIndex: true } },
+      },
+      take: 5000,
+    });
+    const staticServicePaths = new Set(servicePages.map((p) => `/services/${p.slug}`));
+    cmsUrls = cmsPages
+      .filter((p) => p.seo?.robotsIndex !== false)
+      .filter((p) => !(p.type === "SERVICE" && staticServicePaths.has(p.path)))
+      .map((p) => ({
+        url: `${baseUrl}${p.path === "/" ? "" : p.path}`,
+        lastModified: p.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
+  } catch {
+    /* CMS DB optional during build */
+  }
+
+  return [
+    ...staticPages,
+    ...serviceUrls,
+    ...caseStudyUrls,
+    ...freebieUrls,
+    ...blogUrls,
+    ...techNewsUrls,
+    ...cmsUrls,
+  ];
 }
