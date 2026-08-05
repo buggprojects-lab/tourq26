@@ -9,6 +9,7 @@ import {
   type BlockTypeKey,
   type CmsBlock,
 } from "@/lib/cms/blocks";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 type PageEditorProps = {
   mode: "create" | "edit";
@@ -419,12 +420,17 @@ function BlockFields({
       <div className="grid gap-3">
         <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
         <Field label="Heading" value={block.heading ?? ""} onChange={(v) => onChange({ heading: v })} />
-        <Field
-          label="Body HTML"
-          value={block.bodyHtml}
-          onChange={(v) => onChange({ bodyHtml: v })}
-          multiline
-        />
+        <div className="block text-sm">
+          <span className="mono-label text-muted-foreground">Body</span>
+          <div className="mt-1.5">
+            <RichTextEditor
+              value={block.bodyHtml}
+              onChange={(html) => onChange({ bodyHtml: html })}
+              placeholder="Write the section body…"
+              minHeight="12rem"
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -434,13 +440,17 @@ function BlockFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
         <Field label="Heading" value={block.heading} onChange={(v) => onChange({ heading: v })} />
-        <Field
-          label="Body"
-          value={block.body ?? ""}
-          onChange={(v) => onChange({ body: v })}
-          className="sm:col-span-2"
-          multiline
-        />
+        <div className="block text-sm sm:col-span-2">
+          <span className="mono-label text-muted-foreground">Body</span>
+          <div className="mt-1.5">
+            <RichTextEditor
+              value={block.body ?? ""}
+              onChange={(html) => onChange({ body: html })}
+              placeholder="Optional supporting copy…"
+              minHeight="8rem"
+            />
+          </div>
+        </div>
         <Field
           label="Primary CTA label"
           value={block.primaryCtaLabel ?? ""}
@@ -465,56 +475,147 @@ function BlockFields({
 
   if (block.type === "faq") {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Field
           label="Heading"
           value={block.heading ?? ""}
           onChange={(v) => onChange({ heading: v })}
         />
-        <textarea
-          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
-          rows={8}
-          value={JSON.stringify(block.items, null, 2)}
-          onChange={(e) => {
-            try {
-              const items = JSON.parse(e.target.value) as {
-                question: string;
-                answer: string;
-              }[];
-              onChange({ items });
-            } catch {
-              /* ignore while typing */
-            }
-          }}
-        />
+        <ul className="space-y-4">
+          {block.items.map((item, i) => (
+            <li
+              key={`${block.id}-faq-${i}`}
+              className="rounded-md border border-border/50 bg-background/60 p-3"
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="mono-label text-muted-foreground">
+                  Q{String(i + 1).padStart(2, "0")}
+                </span>
+                <button
+                  type="button"
+                  className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                  onClick={() =>
+                    onChange({
+                      items: block.items.filter((_, idx) => idx !== i),
+                    })
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+              <Field
+                label="Question"
+                value={item.question}
+                onChange={(v) => {
+                  const items = block.items.map((it, idx) =>
+                    idx === i ? { ...it, question: v } : it,
+                  );
+                  onChange({ items });
+                }}
+              />
+              <div className="mt-3 block text-sm">
+                <span className="mono-label text-muted-foreground">Answer</span>
+                <div className="mt-1.5">
+                  <RichTextEditor
+                    value={item.answer}
+                    onChange={(html) => {
+                      const items = block.items.map((it, idx) =>
+                        idx === i ? { ...it, answer: html } : it,
+                      );
+                      onChange({ items });
+                    }}
+                    placeholder="Write the answer…"
+                    minHeight="7rem"
+                  />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          className="btn-base btn-secondary"
+          onClick={() =>
+            onChange({
+              items: [
+                ...block.items,
+                { question: "New question?", answer: "<p>Answer goes here.</p>" },
+              ],
+            })
+          }
+        >
+          Add FAQ item
+        </button>
       </div>
     );
   }
 
   if (block.type === "featureGrid") {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Field
           label="Heading"
           value={block.heading ?? ""}
           onChange={(v) => onChange({ heading: v })}
         />
-        <textarea
-          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
-          rows={8}
-          value={JSON.stringify(block.items, null, 2)}
-          onChange={(e) => {
-            try {
-              const items = JSON.parse(e.target.value) as {
-                title: string;
-                description: string;
-              }[];
-              onChange({ items });
-            } catch {
-              /* ignore */
-            }
-          }}
-        />
+        <ul className="space-y-3">
+          {block.items.map((item, i) => (
+            <li
+              key={`${block.id}-feat-${i}`}
+              className="rounded-md border border-border/50 bg-background/60 p-3"
+            >
+              <div className="mb-2 flex justify-end">
+                <button
+                  type="button"
+                  className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                  onClick={() =>
+                    onChange({
+                      items: block.items.filter((_, idx) => idx !== i),
+                    })
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+              <Field
+                label="Title"
+                value={item.title}
+                onChange={(v) => {
+                  const items = block.items.map((it, idx) =>
+                    idx === i ? { ...it, title: v } : it,
+                  );
+                  onChange({ items });
+                }}
+              />
+              <Field
+                label="Description"
+                value={item.description}
+                onChange={(v) => {
+                  const items = block.items.map((it, idx) =>
+                    idx === i ? { ...it, description: v } : it,
+                  );
+                  onChange({ items });
+                }}
+                multiline
+                className="mt-2"
+              />
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          className="btn-base btn-secondary"
+          onClick={() =>
+            onChange({
+              items: [
+                ...block.items,
+                { title: "New feature", description: "Short description." },
+              ],
+            })
+          }
+        >
+          Add feature
+        </button>
       </div>
     );
   }

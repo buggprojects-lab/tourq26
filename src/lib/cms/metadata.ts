@@ -3,6 +3,14 @@ import type { PageWithSeo } from "@/lib/cms/pages";
 import { getPageBlocks } from "@/lib/cms/pages";
 import { faqPageJsonLd, webPageJsonLd, breadcrumbListJsonLd } from "@/lib/seo";
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function buildPageMetadata(
   page: PageWithSeo,
   siteUrl: string,
@@ -53,9 +61,10 @@ export function buildPageJsonLd(page: PageWithSeo, siteUrl: string) {
   for (const part of parts) {
     acc += `/${part}`;
     crumbs.push({
-      name: page.seo?.breadcrumbLabel && acc === page.path
-        ? page.seo.breadcrumbLabel
-        : part.replace(/-/g, " "),
+      name:
+        page.seo?.breadcrumbLabel && acc === page.path
+          ? page.seo.breadcrumbLabel
+          : part.replace(/-/g, " "),
       path: acc,
     });
   }
@@ -63,7 +72,14 @@ export function buildPageJsonLd(page: PageWithSeo, siteUrl: string) {
 
   const faqBlock = blocks.find((b) => b.type === "faq");
   if (faqBlock && faqBlock.type === "faq") {
-    schemas.push(faqPageJsonLd(faqBlock.items));
+    schemas.push(
+      faqPageJsonLd(
+        faqBlock.items.map((item) => ({
+          question: item.question,
+          answer: stripHtml(item.answer),
+        })),
+      ),
+    );
   }
 
   return schemas;
