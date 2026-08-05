@@ -11,6 +11,7 @@
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:seed:cms": "tsx prisma/seed-cms.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

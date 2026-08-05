@@ -24,6 +24,14 @@ export function AdminSidebar({
       items: [{ href: "/admin/dashboard", label: "Dashboard" }],
     },
     {
+      id: "cms",
+      label: "CMS",
+      items: [
+        { href: "/admin/cms/pages", label: "Pages" },
+        { href: "/admin/cms/entities", label: "Entities" },
+      ],
+    },
+    {
       id: "content",
       label: "CONTENT",
       items: [
