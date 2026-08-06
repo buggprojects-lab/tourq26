@@ -2,7 +2,10 @@
 
 type Props = {
   siteUrl: string;
-  slug: string;
+  /** Full path including leading slash, e.g. `/blog/my-post` or `/services/mvp`. Empty = homepage. */
+  path?: string;
+  /** @deprecated Prefer `path`. Kept for older callers — treated as `/blog/{slug}`. */
+  slug?: string;
   title: string;
   description: string;
 };
@@ -19,12 +22,31 @@ function hostname(u: string) {
   }
 }
 
-export function SerpPreview({ siteUrl, slug, title, description }: Props) {
+function resolvePath(path: string | undefined, slug: string | undefined): string {
+  if (typeof path === "string") {
+    const p = path.trim();
+    if (!p || p === "/") return "";
+    return p.startsWith("/") ? p : `/${p}`;
+  }
+  const s = (slug || "").trim();
+  if (!s) return "";
+  return `/blog/${s}`;
+}
+
+export function SerpPreview({ siteUrl, path, slug, title, description }: Props) {
   const base = siteUrl.replace(/\/$/, "");
-  const isHome = !slug.trim();
-  const url = isHome ? base : `${base}/blog/${slug}`;
+  const resolved = resolvePath(path, slug);
+  const isHome = !resolved;
+  const url = isHome ? base : `${base}${resolved}`;
   const host = hostname(base);
-  const crumbs = isHome ? host : `${host} › blog › ${slug}`;
+  const crumbs = isHome
+    ? host
+    : `${host} › ${resolved
+        .replace(/^\//, "")
+        .split("/")
+        .filter(Boolean)
+        .join(" › ")}`;
+
   return (
     <div className="card-flat p-4">
       <p className="mono-eyebrow text-muted-foreground">GOOGLE PREVIEW</p>
@@ -40,12 +62,12 @@ export function SerpPreview({ siteUrl, slug, title, description }: Props) {
           </div>
         </div>
         <a
-          href={url}
+          href={url || "#"}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-2 block text-[18px] leading-tight text-[color:#1a0dab] hover:underline"
         >
-          {clamp(title || "Your post title — Site name", 70)}
+          {clamp(title || "Your page title — Site name", 70)}
         </a>
         <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
           {clamp(
