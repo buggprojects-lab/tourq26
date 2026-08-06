@@ -9,11 +9,18 @@ import {
   type BlockTypeKey,
   type CmsBlock,
 } from "@/lib/cms/blocks";
+import {
+  extractTextFromCmsBlocks,
+  generateSeoFromContent,
+} from "@/lib/seo-generate";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { SerpPreview } from "@/components/admin/SerpPreview";
 
 type PageEditorProps = {
   mode: "create" | "edit";
   pageId?: string;
+  siteUrl?: string;
+  siteName?: string;
   initial?: {
     title: string;
     slug: string;
@@ -46,7 +53,13 @@ const PAGE_TYPES = [
   "CUSTOM",
 ] as const;
 
-export function PageEditor({ mode, pageId, initial }: PageEditorProps) {
+export function PageEditor({
+  mode,
+  pageId,
+  siteUrl = "https://example.com",
+  siteName = "",
+  initial,
+}: PageEditorProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
@@ -73,6 +86,20 @@ export function PageEditor({ mode, pageId, initial }: PageEditorProps) {
   const [addType, setAddType] = useState<BlockTypeKey>("hero");
 
   const previewPath = useMemo(() => path || `/${slug}`, [path, slug]);
+
+  function generateSeo() {
+    const generated = generateSeoFromContent({
+      title,
+      excerpt,
+      bodyText: extractTextFromCmsBlocks(blocks),
+      focusKeyword: focusKeyword || targetKeyword,
+    });
+    setMetaTitle(generated.metaTitle);
+    setMetaDescription(generated.metaDescription);
+    if (!focusKeyword.trim() && targetKeyword.trim()) {
+      setFocusKeyword(targetKeyword.trim());
+    }
+  }
 
   async function save(publish = false) {
     setSaving(true);
@@ -293,12 +320,52 @@ export function PageEditor({ mode, pageId, initial }: PageEditorProps) {
       </section>
 
       <section className="grid gap-4 border-t border-border/60 pt-6 lg:grid-cols-2">
-        <h2 className="display-sm text-foreground lg:col-span-2">SEO</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3 lg:col-span-2">
+          <div>
+            <h2 className="display-sm text-foreground">SEO</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Generate meta from title, excerpt, and page blocks, then refine below.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-base btn-secondary"
+            onClick={generateSeo}
+            disabled={!title.trim() && !excerpt.trim() && blocks.length === 0}
+          >
+            Generate from content
+          </button>
+        </div>
+
+        <div className="lg:col-span-2">
+          <SerpPreview
+            siteUrl={siteUrl}
+            path={previewPath}
+            title={
+              (metaTitle.trim() || title || "Page title") +
+              (siteName ? ` | ${siteName}` : "")
+            }
+            description={metaDescription || excerpt}
+          />
+        </div>
+
         <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Meta title</span>
+          <span className="flex items-center justify-between gap-2">
+            <span className="mono-label text-muted-foreground">Meta title</span>
+            <span
+              className={`mono-label tabular-nums ${
+                (metaTitle || title).length > 60
+                  ? "text-[color:var(--app-destructive)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {(metaTitle || title).length} / ~60
+            </span>
+          </span>
           <input
             className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
             value={metaTitle}
+            placeholder={title || "Defaults to page title"}
             onChange={(e) => setMetaTitle(e.target.value)}
           />
         </label>
@@ -311,11 +378,23 @@ export function PageEditor({ mode, pageId, initial }: PageEditorProps) {
           />
         </label>
         <label className="block text-sm lg:col-span-2">
-          <span className="mono-label text-muted-foreground">Meta description</span>
+          <span className="flex items-center justify-between gap-2">
+            <span className="mono-label text-muted-foreground">Meta description</span>
+            <span
+              className={`mono-label tabular-nums ${
+                metaDescription.length > 160
+                  ? "text-[color:var(--app-destructive)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {metaDescription.length} / ~160
+            </span>
+          </span>
           <textarea
             className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
             rows={3}
             value={metaDescription}
+            placeholder="Write or generate from page content"
             onChange={(e) => setMetaDescription(e.target.value)}
           />
         </label>

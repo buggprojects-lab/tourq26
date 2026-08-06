@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
+import { readSiteContent } from "@/lib/content";
 import { getPageById, getPageBlocks } from "@/lib/cms/pages";
 import { AdminPageHeader } from "../../../AdminPageHeader";
 import { PageEditor } from "@/components/admin/cms/PageEditor";
@@ -15,6 +16,7 @@ export default async function AdminCmsEditPage({ params }: Props) {
   if (!page) notFound();
 
   const blocks = getPageBlocks(page);
+  const site = await readSiteContent();
 
   return (
     <div>
@@ -31,6 +33,8 @@ export default async function AdminCmsEditPage({ params }: Props) {
         <PageEditor
           mode="edit"
           pageId={page.id}
+          siteUrl={site.siteUrl}
+          siteName={site.siteName}
           initial={{
             title: page.title,
             slug: page.slug,

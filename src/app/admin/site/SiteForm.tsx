@@ -53,7 +53,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
     <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-8 max-w-2xl space-y-10">
       <SerpPreview
         siteUrl={data.siteUrl}
-        slug=""
+        path=""
         title={data.defaultTitle}
         description={data.defaultDescription}
       />

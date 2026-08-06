@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
+import { readSiteContent } from "@/lib/content";
 import { createDefaultBlock } from "@/lib/cms/blocks";
 import { AdminPageHeader } from "../../../AdminPageHeader";
 import { PageEditor } from "@/components/admin/cms/PageEditor";
@@ -7,6 +8,8 @@ import { PageEditor } from "@/components/admin/cms/PageEditor";
 export default async function AdminCmsNewPage() {
   const ok = await isAdmin();
   if (!ok) redirect("/admin");
+
+  const site = await readSiteContent();
 
   return (
     <div>
@@ -22,6 +25,8 @@ export default async function AdminCmsNewPage() {
       <div className="mt-8">
         <PageEditor
           mode="create"
+          siteUrl={site.siteUrl}
+          siteName={site.siteName}
           initial={{
             title: "",
             slug: "",
