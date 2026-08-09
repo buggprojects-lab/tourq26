@@ -84,17 +84,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /** CMS published pages (authoritative when present). */
   const cmsByPath = new Map<string, MetadataRoute.Sitemap[number]>();
   try {
-    const { prisma } = await import("@/lib/db");
-    const cmsPages = await prisma.page.findMany({
-      where: { status: "PUBLISHED" },
-      select: {
-        path: true,
-        updatedAt: true,
-        type: true,
-        seo: { select: { robotsIndex: true } },
-      },
-      take: 10000,
-    });
+    const { prisma, withDbTimeout } = await import("@/lib/db");
+    const cmsPages = await withDbTimeout(
+      prisma.page.findMany({
+        where: { status: "PUBLISHED" },
+        select: {
+          path: true,
+          updatedAt: true,
+          type: true,
+          seo: { select: { robotsIndex: true } },
+        },
+        take: 10000,
+      }),
+    );
     for (const p of cmsPages) {
       if (p.seo?.robotsIndex === false) continue;
       if (!p.path || p.path === "/") continue;

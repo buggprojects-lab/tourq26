@@ -1,5 +1,5 @@
 import type { EntityKind, RelationType } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { prisma, withDbTimeout } from "@/lib/db";
 import { slugify } from "@/lib/cms/pages";
 
 export const ENTITY_KINDS = [
@@ -97,13 +97,13 @@ export const SEED_TECHNOLOGIES: SeedEntity[] = [
 export async function listEntities(kind: EntityKind) {
   switch (kind) {
     case "SERVICE":
-      return prisma.service.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+      return withDbTimeout(prisma.service.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     case "SOLUTION":
-      return prisma.solution.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+      return withDbTimeout(prisma.solution.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     case "INDUSTRY":
-      return prisma.industry.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+      return withDbTimeout(prisma.industry.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     case "TECHNOLOGY":
-      return prisma.technology.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+      return withDbTimeout(prisma.technology.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     default:
       return [];
   }

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, withDbTimeout } from "@/lib/db";
 
 export type FooterColumn = {
   eyebrow: string;
@@ -76,8 +76,13 @@ function isFooterColumnArray(v: unknown): v is FooterColumn[] {
 }
 
 export async function readFooterContent(): Promise<FooterContent> {
-  const row = await prisma.footer.findUnique({ where: { key: FOOTER_KEY } });
   const d = getDefaultFooterContent();
+  let row;
+  try {
+    row = await withDbTimeout(prisma.footer.findUnique({ where: { key: FOOTER_KEY } }));
+  } catch {
+    return d;
+  }
   if (!row) return d;
   return {
     blurb: row.blurb || d.blurb,

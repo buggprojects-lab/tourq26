@@ -5,18 +5,20 @@ type CmsLink = { title: string; path: string; type: string };
 
 async function loadPublishedCmsLinks(): Promise<CmsLink[]> {
   try {
-    const { prisma } = await import("@/lib/db");
-    const pages = await prisma.page.findMany({
-      where: { status: "PUBLISHED" },
-      select: {
-        title: true,
-        path: true,
-        type: true,
-        seo: { select: { robotsIndex: true } },
-      },
-      orderBy: [{ type: "asc" }, { title: "asc" }],
-      take: 500,
-    });
+    const { prisma, withDbTimeout } = await import("@/lib/db");
+    const pages = await withDbTimeout(
+      prisma.page.findMany({
+        where: { status: "PUBLISHED" },
+        select: {
+          title: true,
+          path: true,
+          type: true,
+          seo: { select: { robotsIndex: true } },
+        },
+        orderBy: [{ type: "asc" }, { title: "asc" }],
+        take: 500,
+      }),
+    );
     return pages
       .filter((p) => p.seo?.robotsIndex !== false)
       .filter((p) => p.path && p.path !== "/")

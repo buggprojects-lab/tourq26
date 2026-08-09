@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, withDbTimeout } from "@/lib/db";
 
 export type NavLink = {
   label: string;
@@ -21,10 +21,17 @@ function getDefaultNavLinks(): NavLink[] {
 }
 
 export async function readPrimaryNav(): Promise<NavLink[]> {
-  const nav = await prisma.navigation.findUnique({
-    where: { key: NAV_KEY },
-    include: { items: { orderBy: { sortOrder: "asc" } } },
-  });
+  let nav;
+  try {
+    nav = await withDbTimeout(
+      prisma.navigation.findUnique({
+        where: { key: NAV_KEY },
+        include: { items: { orderBy: { sortOrder: "asc" } } },
+      }),
+    );
+  } catch {
+    return getDefaultNavLinks();
+  }
   if (!nav || nav.items.length === 0) return getDefaultNavLinks();
   return nav.items.map((i) => ({
     label: i.label,
