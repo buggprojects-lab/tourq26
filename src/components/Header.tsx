@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useExternalDevToolsHubHref } from "@/hooks/useExternalDevToolsHubHref";
+import type { NavLink } from "@/lib/nav-content";
 
 /**
  * Sticky marketing nav (DESIGN.md → nav-bar).
@@ -11,37 +12,38 @@ import { useExternalDevToolsHubHref } from "@/hooks/useExternalDevToolsHubHref";
  * dark hero bands and white product bands.
  */
 
-const baseNavLinks = [
-  { href: "/about", label: "About" },
-  { href: "/services", label: "Services" },
-  { href: "/#why-us", label: "Why Us" },
-  { href: "/blog", label: "Blog" },
-  { href: "/freebies", label: "Freebies" },
-  { href: "/dev-tools", label: "Dev tools", flag: "tools" as const },
-  { href: "/#testimonials", label: "Testimonials" },
-];
-
 export type HeaderNavFlags = {
   showTools?: boolean;
 };
 
-function buildNavLinks(flags: HeaderNavFlags | undefined, devToolsExternalHref: string | null) {
+const DEV_TOOLS_LINK = { href: "/dev-tools", label: "Dev tools" };
+
+function buildNavLinks(
+  navLinks: NavLink[],
+  flags: HeaderNavFlags | undefined,
+  devToolsExternalHref: string | null,
+) {
   const showTools = flags?.showTools !== false;
-  return baseNavLinks.filter((link) => {
-    if ("flag" in link && link.flag === "tools") {
-      if (!showTools || !devToolsExternalHref) return false;
-    }
-    return true;
-  });
+  const links: { href: string; label: string; openInNewTab?: boolean }[] = [...navLinks];
+  if (showTools && devToolsExternalHref) {
+    links.push(DEV_TOOLS_LINK);
+  }
+  return links;
 }
 
-export default function Header({ navFlags }: { navFlags?: HeaderNavFlags }) {
+export default function Header({
+  navLinks = [],
+  navFlags,
+}: {
+  navLinks?: NavLink[];
+  navFlags?: HeaderNavFlags;
+}) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const devToolsExternalHref = useExternalDevToolsHubHref();
-  const navLinks = useMemo(
-    () => buildNavLinks(navFlags, devToolsExternalHref),
-    [navFlags, devToolsExternalHref],
+  const resolvedLinks = useMemo(
+    () => buildNavLinks(navLinks, navFlags, devToolsExternalHref),
+    [navLinks, navFlags, devToolsExternalHref],
   );
 
   useEffect(() => {
@@ -69,14 +71,17 @@ export default function Header({ navFlags }: { navFlags?: HeaderNavFlags }) {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">
-          {navLinks.map((link) => {
-            const href = link.href === "/dev-tools" ? devToolsExternalHref! : link.href;
+          {resolvedLinks.map((link) => {
+            const isDevTools = link.href === "/dev-tools";
+            const href = isDevTools ? devToolsExternalHref! : link.href;
             return (
               <Link
-                key={link.href === "/dev-tools" ? "dev-tools" : link.href}
+                key={isDevTools ? "dev-tools" : link.href}
                 href={href}
                 className="text-[14px] font-medium tracking-tight text-inherit/85 opacity-85 transition-opacity hover:opacity-100"
-                {...(link.href === "/dev-tools" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(isDevTools || link.openInNewTab
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
               >
                 {link.label}
               </Link>
@@ -122,15 +127,18 @@ export default function Header({ navFlags }: { navFlags?: HeaderNavFlags }) {
         <div className="border-t border-[var(--app-glass-border)] bg-[var(--brand-canvas-dark)] text-white md:hidden">
           <div className="flex flex-col gap-3 px-4 py-4">
             <nav className="flex flex-col gap-1" aria-label="Mobile primary">
-              {navLinks.map((link) => {
-                const href = link.href === "/dev-tools" ? devToolsExternalHref! : link.href;
+              {resolvedLinks.map((link) => {
+                const isDevTools = link.href === "/dev-tools";
+                const href = isDevTools ? devToolsExternalHref! : link.href;
                 return (
                   <Link
-                    key={link.href === "/dev-tools" ? "dev-tools" : link.href}
+                    key={isDevTools ? "dev-tools" : link.href}
                     href={href}
                     onClick={() => setOpen(false)}
                     className="rounded-[var(--radius-sm)] px-3 py-3 text-[15px] font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
-                    {...(link.href === "/dev-tools" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    {...(isDevTools || link.openInNewTab
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                   >
                     {link.label}
                   </Link>

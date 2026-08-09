@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { publishedBlogPosts, readBlogPosts } from "@/lib/content";
-import { caseStudies } from "@/data/case-studies";
+import { readCaseStudies } from "@/lib/case-studies-content";
 import { freebies } from "@/data/freebies";
 import { servicePages } from "@/data/services-content";
 import { techNewsDemoItems } from "@/data/tech-news-demo";
@@ -29,6 +29,7 @@ function priorityForCmsType(type: string): number {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (await getSiteUrl()).replace(/\/$/, "");
   const blogPosts = publishedBlogPosts(await readBlogPosts());
+  const caseStudies = await readCaseStudies();
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },

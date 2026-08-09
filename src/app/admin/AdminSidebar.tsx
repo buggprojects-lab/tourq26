@@ -10,10 +10,14 @@ export function AdminSidebar({
   blogCount,
   draftCount,
   contactCount,
+  caseStudyCount,
+  maintenanceOn,
 }: {
   blogCount: number;
   draftCount: number;
   contactCount: number;
+  caseStudyCount: number;
+  maintenanceOn: boolean;
 }) {
   const pathname = usePathname() || "";
 
@@ -36,6 +40,7 @@ export function AdminSidebar({
       label: "CONTENT",
       items: [
         { href: "/admin/blog", label: "Blog", badge: blogCount },
+        { href: "/admin/case-studies", label: "Case studies", badge: caseStudyCount },
         { href: "/admin/testimonials", label: "Testimonials" },
       ],
     },
@@ -48,6 +53,9 @@ export function AdminSidebar({
       id: "settings",
       label: "SETTINGS",
       items: [
+        { href: "/admin/home", label: "Homepage" },
+        { href: "/admin/navigation", label: "Navigation" },
+        { href: "/admin/footer", label: "Footer" },
         { href: "/admin/site", label: "Site & SEO" },
         { href: "/admin/feature-flags", label: "Feature flags" },
       ],
@@ -110,6 +118,21 @@ export function AdminSidebar({
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Inbox</dt>
               <dd className="tabular-nums font-medium text-foreground">{contactCount}</dd>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <dt className="text-muted-foreground">Maintenance</dt>
+              <dd className="flex items-center gap-1.5 font-medium text-foreground">
+                <span
+                  aria-hidden
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{
+                    background: maintenanceOn
+                      ? "var(--app-destructive)"
+                      : "var(--app-success)",
+                  }}
+                />
+                {maintenanceOn ? "ON" : "OFF"}
+              </dd>
             </div>
           </dl>
         </div>

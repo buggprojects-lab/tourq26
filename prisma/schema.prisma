@@ -891,7 +891,9 @@ model MenuItem {
 
 model Footer {
   id        String   @id @default(cuid()) @map("_id")
-  key       String   @unique
+  key       String   @unique @default("default")
+  blurb     String?
+  tagline   String?
   columns   Json
   legal     Json?
   socials   Json?
@@ -1061,5 +1063,74 @@ model ContactSubmission {
   company   String?
   message   String
   createdAt DateTime @default(now())
+}
+
+model CaseStudyPost {
+  id          String   @id @default(cuid()) @map("_id")
+  slug        String   @unique
+  title       String
+  seoTitle    String?
+  client      String
+  industry    String
+  challenge   String
+  outcome     String
+  metric      String
+  metricLabel String
+  icon        String?
+  coverImage  String
+  coverAlt    String
+  description String
+  date        String
+  readTime    String
+  services    String[] @default([])
+  body        String
+  sortOrder   Int      @default(0)
+}
+
+model HomePageContent {
+  id      String @id @default(cuid()) @map("_id")
+  key     String @unique @default("default")
+
+  heroEyebrow          String?
+  heroHeading          String?
+  heroSubheading       String?
+  heroPrimaryCtaLabel  String?
+  heroPrimaryCtaHref   String?
+  heroSecondaryCtaLabel String?
+  heroSecondaryCtaHref String?
+  heroTertiaryCtaLabel String?
+  heroTertiaryCtaHref  String?
+  heroTags             String[] @default([])
+
+  servicesEyebrow String?
+  servicesHeading String?
+  servicesIntro   String?
+  /// Array of { slug, title, description, result, category, icon }
+  servicesItems   Json?
+
+  whyUsEyebrow String?
+  whyUsHeading String?
+  whyUsIntro   String?
+  /// Array of { eyebrow, stat, title, description }
+  whyUsItems   Json?
+
+  caseStudiesEyebrow String?
+  caseStudiesHeading String?
+  caseStudiesIntro   String?
+
+  ctaEyebrow        String?
+  ctaHeading        String?
+  ctaBody           String?
+  ctaPrimaryLabel   String?
+  ctaPrimaryHref    String?
+  ctaSecondaryLabel String?
+  ctaSecondaryHref  String?
+  ctaEmail          String?
+  ctaFootnote       String?
+
+  snapshotHeading    String?
+  snapshotParagraphs String[] @default([])
+
+  updatedAt DateTime @updatedAt
 }
 

@@ -4,7 +4,7 @@ import Image from "next/image";
 import MarketingHeader from "@/components/MarketingHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
-import { caseStudies } from "@/data/case-studies";
+import { readCaseStudies } from "@/lib/case-studies-content";
 import { getSiteUrl } from "@/lib/site-url";
 import { breadcrumbListJsonLd, webPageJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CaseStudiesIndexPage() {
-  const siteUrl = await getSiteUrl();
+  const [siteUrl, caseStudies] = await Promise.all([getSiteUrl(), readCaseStudies()]);
   const breadcrumbLd = breadcrumbListJsonLd(siteUrl, [
     { name: "Home", path: "/" },
     { name: "Case studies", path: "/case-studies" },
