@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, withDbTimeout } from "@/lib/db";
 
 export type BlogStatus = "draft" | "published";
 
@@ -118,7 +118,7 @@ function toBlogPost(row: {
 
 export async function readBlogPosts(): Promise<BlogPost[]> {
   try {
-    const rows = await prisma.blogPost.findMany();
+    const rows = await withDbTimeout(prisma.blogPost.findMany());
     return rows.map(toBlogPost);
   } catch {
     return [];
@@ -172,7 +172,7 @@ export async function writeBlogPosts(posts: BlogPost[]): Promise<void> {
 
 export async function readTestimonials(): Promise<Testimonial[]> {
   try {
-    const rows = await prisma.testimonial.findMany({ orderBy: { sortOrder: "asc" } });
+    const rows = await withDbTimeout(prisma.testimonial.findMany({ orderBy: { sortOrder: "asc" } }));
     return rows.map((t) => ({
       id: t.id,
       quote: t.quote,
@@ -241,7 +241,7 @@ export async function readSiteContent(): Promise<SiteContent> {
   const d = getDefaultSiteContent();
   let row;
   try {
-    row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
+    row = await withDbTimeout(prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }));
   } catch {
     return d;
   }
@@ -342,7 +342,7 @@ export async function addContactSubmission(input: {
 export async function readFeatureFlagsDocument(): Promise<FeatureFlagsDocument | null> {
   let row;
   try {
-    row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
+    row = await withDbTimeout(prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }));
   } catch {
     return null;
   }

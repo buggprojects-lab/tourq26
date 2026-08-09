@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, withDbTimeout } from "@/lib/db";
 
 export type CaseStudy = {
   slug: string;
@@ -64,7 +64,7 @@ function toCaseStudy(row: {
 
 export async function readCaseStudies(): Promise<CaseStudy[]> {
   try {
-    const rows = await prisma.caseStudyPost.findMany({ orderBy: { sortOrder: "asc" } });
+    const rows = await withDbTimeout(prisma.caseStudyPost.findMany({ orderBy: { sortOrder: "asc" } }));
     return rows.map(toCaseStudy);
   } catch {
     return [];
@@ -73,7 +73,7 @@ export async function readCaseStudies(): Promise<CaseStudy[]> {
 
 export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | undefined> {
   try {
-    const row = await prisma.caseStudyPost.findUnique({ where: { slug } });
+    const row = await withDbTimeout(prisma.caseStudyPost.findUnique({ where: { slug } }));
     return row ? toCaseStudy(row) : undefined;
   } catch {
     return undefined;
