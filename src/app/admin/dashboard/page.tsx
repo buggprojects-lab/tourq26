@@ -6,10 +6,7 @@ import {
   readTestimonials,
   readContactSubmissions,
 } from "@/lib/content";
-import { SeedKvButton } from "./SeedKvButton";
 import { AdminPageHeader } from "../AdminPageHeader";
-
-const kvConfigured = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
 function formatRelative(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -186,17 +183,10 @@ export default async function AdminDashboardPage() {
 
       <section className="mt-8 card-flat">
         <p className="mono-eyebrow text-muted-foreground">STORAGE</p>
-        <p className="mt-2 text-[14px] text-foreground">
-          {kvConfigured ? "Vercel KV / Upstash" : "Local content/*.json files"}
-        </p>
+        <p className="mt-2 text-[14px] text-foreground">MongoDB Atlas (Prisma)</p>
         <p className="mt-1 text-[13px] text-muted-foreground">
-          {kvConfigured
-            ? "Content persists on serverless. Use Seed below to copy local files into KV (one-time)."
-            : "Local files are great for development. On Vercel, configure KV + env vars to persist content across deploys."}
+          Content persists in the shared MongoDB cluster.
         </p>
-        {kvConfigured ? (
-          <SeedKvButton className="btn-base btn-outline mt-4 text-[12px]" />
-        ) : null}
       </section>
     </div>
   );

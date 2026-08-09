@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getResolvedFeatureFlagsFromKvOnly } from "@/lib/feature-flags-edge";
+import { getResolvedFeatureFlags } from "@/lib/feature-flags";
 
 function isAdminOrPublicAuthPath(pathname: string): boolean {
   if (pathname.startsWith("/admin")) return true;
@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const flags = await getResolvedFeatureFlagsFromKvOnly();
+  const flags = await getResolvedFeatureFlags().catch(() => null);
   const maintenanceActive = envMaintenanceOn() || (flags?.maintenance_mode === true);
 
   if (maintenanceActive) {
@@ -73,6 +73,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: "nodejs",
   matcher: [
     // Exclude everything under /_next (static chunks, media, image optimizer) — matcher is a hint; guard above is authoritative.
     "/((?!_next/|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",

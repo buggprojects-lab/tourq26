@@ -275,7 +275,7 @@ model InterviewBankItem {
 
 
 // =============================================================================
-// Torq Studio CMS (marketing site) — MongoDB collections
+// Torq Studio CMS (marketing site) ï¿½ MongoDB collections
 // =============================================================================
 
 // Enums
@@ -751,23 +751,19 @@ model Client {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  testimonials Testimonial[]
   caseStudies  CaseStudy[]
 }
 
 model Testimonial {
   id        String   @id @default(cuid()) @map("_id")
   quote     String
-  authorName String
-  authorTitle String?
-  rating    Int?
-  clientId  String?
-  mediaId   String?
-  isFeatured Boolean @default(false)
+  result    String?
+  name      String
+  role      String?
+  company   String?
+  rating    Int      @default(5)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
-
-  client Client? @relation(fields: [clientId], references: [id])
 }
 
 model CaseStudy {
@@ -1018,16 +1014,52 @@ model ProgrammaticJob {
 }
 
 model SiteSettings {
-  id              String   @id @default(cuid()) @map("_id")
-  key             String   @unique @default("default")
-  siteUrl         String?
-  siteName        String   @default("Torq Studio")
-  twitterHandle   String?
-  socialProfiles  String[] @default([])
-  defaultOgImageId String?
-  organizationJson Json?
-  llmsTxtExtra    String?
-  featureFlags    Json?
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default(cuid()) @map("_id")
+  key                String   @unique @default("default")
+  siteUrl            String?
+  siteName           String   @default("Torq Studio")
+  defaultTitle       String?
+  defaultDescription String?
+  titleTemplate      String?
+  keywords           String[] @default([])
+  ogTitle            String?
+  ogDescription      String?
+  twitterHandle      String?
+  twitterTitle       String?
+  twitterDescription String?
+  socialProfiles     String[] @default([])
+  defaultOgImageId   String?
+  organizationJson   Json?
+  llmsTxtExtra       String?
+  featureFlags       Json?
+  updatedAt          DateTime @updatedAt
+}
+
+model BlogPost {
+  id           String   @id @default(cuid()) @map("_id")
+  slug         String   @unique
+  title        String
+  seoTitle     String?
+  description  String
+  excerpt      String?
+  date         String
+  dateUpdated  String?
+  readTime     String
+  body         String
+  authorName   String?
+  status       String   @default("published")
+  coverImage   String?
+  tags         String[] @default([])
+  focusKeyword String?
+  wordCount    Int?
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String
+  email     String
+  company   String?
+  message   String
+  createdAt DateTime @default(now())
 }
 

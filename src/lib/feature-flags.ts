@@ -14,9 +14,16 @@ export {
   type FeatureFlagKey,
 } from "@/lib/feature-flags-schema";
 
+const CACHE_TTL_MS = 30_000;
+let cache: { flags: Record<FeatureFlagKey, boolean>; expiresAt: number } | null = null;
+
+/** Reads through a short in-memory cache — this runs on every request via middleware. */
 export async function getResolvedFeatureFlags(): Promise<Record<FeatureFlagKey, boolean>> {
+  if (cache && cache.expiresAt > Date.now()) return cache.flags;
   const doc = await readFeatureFlagsDocument();
-  return resolveFeatureFlagsFromStored(doc?.values ?? {});
+  const flags = resolveFeatureFlagsFromStored(doc?.values ?? {});
+  cache = { flags, expiresAt: Date.now() + CACHE_TTL_MS };
+  return flags;
 }
 
 export async function isFeatureEnabled(key: FeatureFlagKey): Promise<boolean> {
@@ -36,6 +43,7 @@ export async function saveFeatureFlagValues(
     values: next,
     updatedAt: new Date().toISOString(),
   });
+  cache = null;
   return next;
 }
 
