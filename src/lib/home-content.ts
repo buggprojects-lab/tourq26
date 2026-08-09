@@ -204,8 +204,13 @@ function isWhyUsItemArray(v: unknown): v is WhyUsItem[] {
 }
 
 export async function readHomeContent(): Promise<HomeContent> {
-  const row = await prisma.homePageContent.findUnique({ where: { key: SETTINGS_KEY } });
   const d = getDefaultHomeContent();
+  let row;
+  try {
+    row = await prisma.homePageContent.findUnique({ where: { key: SETTINGS_KEY } });
+  } catch {
+    return d;
+  }
   if (!row) return d;
   return {
     heroEyebrow: row.heroEyebrow || d.heroEyebrow,

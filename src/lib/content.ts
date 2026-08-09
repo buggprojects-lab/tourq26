@@ -117,8 +117,12 @@ function toBlogPost(row: {
 }
 
 export async function readBlogPosts(): Promise<BlogPost[]> {
-  const rows = await prisma.blogPost.findMany();
-  return rows.map(toBlogPost);
+  try {
+    const rows = await prisma.blogPost.findMany();
+    return rows.map(toBlogPost);
+  } catch {
+    return [];
+  }
 }
 
 export async function writeBlogPosts(posts: BlogPost[]): Promise<void> {
@@ -167,16 +171,20 @@ export async function writeBlogPosts(posts: BlogPost[]): Promise<void> {
 }
 
 export async function readTestimonials(): Promise<Testimonial[]> {
-  const rows = await prisma.testimonial.findMany({ orderBy: { sortOrder: "asc" } });
-  return rows.map((t) => ({
-    id: t.id,
-    quote: t.quote,
-    result: t.result ?? "",
-    name: t.name,
-    role: t.role ?? "",
-    company: t.company ?? "",
-    rating: t.rating,
-  }));
+  try {
+    const rows = await prisma.testimonial.findMany({ orderBy: { sortOrder: "asc" } });
+    return rows.map((t) => ({
+      id: t.id,
+      quote: t.quote,
+      result: t.result ?? "",
+      name: t.name,
+      role: t.role ?? "",
+      company: t.company ?? "",
+      rating: t.rating,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function writeTestimonials(items: Testimonial[]): Promise<void> {
@@ -230,8 +238,13 @@ function getDefaultSiteContent(): SiteContent {
 }
 
 export async function readSiteContent(): Promise<SiteContent> {
-  const row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
   const d = getDefaultSiteContent();
+  let row;
+  try {
+    row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
+  } catch {
+    return d;
+  }
   if (!row) return d;
   return {
     siteUrl: row.siteUrl || d.siteUrl,
@@ -327,7 +340,12 @@ export async function addContactSubmission(input: {
 // --- Feature flags ---
 
 export async function readFeatureFlagsDocument(): Promise<FeatureFlagsDocument | null> {
-  const row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
+  let row;
+  try {
+    row = await prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } });
+  } catch {
+    return null;
+  }
   const data = row?.featureFlags;
   if (data && typeof data === "object" && "values" in data) {
     return data as FeatureFlagsDocument;

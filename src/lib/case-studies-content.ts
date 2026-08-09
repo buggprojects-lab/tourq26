@@ -63,13 +63,21 @@ function toCaseStudy(row: {
 }
 
 export async function readCaseStudies(): Promise<CaseStudy[]> {
-  const rows = await prisma.caseStudyPost.findMany({ orderBy: { sortOrder: "asc" } });
-  return rows.map(toCaseStudy);
+  try {
+    const rows = await prisma.caseStudyPost.findMany({ orderBy: { sortOrder: "asc" } });
+    return rows.map(toCaseStudy);
+  } catch {
+    return [];
+  }
 }
 
 export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | undefined> {
-  const row = await prisma.caseStudyPost.findUnique({ where: { slug } });
-  return row ? toCaseStudy(row) : undefined;
+  try {
+    const row = await prisma.caseStudyPost.findUnique({ where: { slug } });
+    return row ? toCaseStudy(row) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function writeCaseStudies(items: CaseStudy[]): Promise<void> {

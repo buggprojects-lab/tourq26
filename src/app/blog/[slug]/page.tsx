@@ -18,8 +18,12 @@ import {
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
 
 export async function generateStaticParams() {
-  const posts = publishedBlogPosts(await readBlogPosts());
-  return posts.map((p) => ({ slug: p.slug }));
+  try {
+    const posts = publishedBlogPosts(await readBlogPosts());
+    return posts.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({

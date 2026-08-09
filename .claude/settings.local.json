@@ -3,7 +3,12 @@
     "allow": [
       "Bash(python3 -c \"import json;print\\(len\\(json.load\\(open\\('content/blog.json'\\)\\)\\)\\)\")",
       "Bash(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('content/blog.json'\\)\\).length\\)\")",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(npx next *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(timeout 300 npm run build)",
+      "Bash(kill -0 10176)"
     ]
   }
 }

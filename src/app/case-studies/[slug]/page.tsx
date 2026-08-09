@@ -13,8 +13,12 @@ import { sanitizeBlogHtml } from "@/lib/blog-sanitize";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
 
 export async function generateStaticParams() {
-  const caseStudies = await readCaseStudies();
-  return caseStudies.map((c) => ({ slug: c.slug }));
+  try {
+    const caseStudies = await readCaseStudies();
+    return caseStudies.map((c) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
