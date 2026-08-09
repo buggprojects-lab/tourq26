@@ -6,8 +6,28 @@ import { servicePages } from "@/data/services-content";
 import { techNewsDemoItems } from "@/data/tech-news-demo";
 import { getSiteUrl } from "@/lib/site-url";
 
+function priorityForCmsType(type: string): number {
+  switch (type) {
+    case "SERVICE":
+    case "SOLUTION":
+      return 0.85;
+    case "INDUSTRY":
+    case "TECHNOLOGY":
+      return 0.8;
+    case "CASE_STUDY":
+      return 0.75;
+    case "BLOG":
+    case "GUIDE":
+      return 0.7;
+    case "PROGRAMMATIC":
+      return 0.65;
+    default:
+      return 0.7;
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = await getSiteUrl();
+  const baseUrl = (await getSiteUrl()).replace(/\/$/, "");
   const blogPosts = publishedBlogPosts(await readBlogPosts());
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -16,6 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/services`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/solutions`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
+    { url: `${baseUrl}/industries`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
+    { url: `${baseUrl}/technologies`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/case-studies`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/freebies`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/tech-news`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.82 },
@@ -24,8 +47,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/llms.txt`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.35,
+      changeFrequency: "weekly",
+      priority: 0.4,
     },
   ];
 
@@ -43,13 +66,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  const serviceUrls: MetadataRoute.Sitemap = servicePages.map((p) => ({
-    url: `${baseUrl}/services/${p.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.85,
-  }));
-
   const caseStudyUrls: MetadataRoute.Sitemap = caseStudies.map((c) => ({
     url: `${baseUrl}/case-studies/${c.slug}`,
     lastModified: new Date(c.date),
@@ -64,7 +80,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.72,
   }));
 
-  let cmsUrls: MetadataRoute.Sitemap = [];
+  /** CMS published pages (authoritative when present). */
+  const cmsByPath = new Map<string, MetadataRoute.Sitemap[number]>();
   try {
     const { prisma } = await import("@/lib/db");
     const cmsPages = await prisma.page.findMany({
@@ -75,29 +92,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         type: true,
         seo: { select: { robotsIndex: true } },
       },
-      take: 5000,
+      take: 10000,
     });
-    const staticServicePaths = new Set(servicePages.map((p) => `/services/${p.slug}`));
-    cmsUrls = cmsPages
-      .filter((p) => p.seo?.robotsIndex !== false)
-      .filter((p) => !(p.type === "SERVICE" && staticServicePaths.has(p.path)))
-      .map((p) => ({
-        url: `${baseUrl}${p.path === "/" ? "" : p.path}`,
+    for (const p of cmsPages) {
+      if (p.seo?.robotsIndex === false) continue;
+      if (!p.path || p.path === "/") continue;
+      cmsByPath.set(p.path, {
+        url: `${baseUrl}${p.path}`,
         lastModified: p.updatedAt,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      }));
+        changeFrequency: "weekly",
+        priority: priorityForCmsType(p.type),
+      });
+    }
   } catch {
     /* CMS DB optional during build */
   }
 
-  return [
+  /** Legacy static services only when not already in CMS. */
+  const serviceUrls: MetadataRoute.Sitemap = servicePages
+    .filter((p) => !cmsByPath.has(`/services/${p.slug}`))
+    .map((p) => ({
+      url: `${baseUrl}/services/${p.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.85,
+    }));
+
+  const seen = new Set<string>();
+  const merged: MetadataRoute.Sitemap = [];
+  for (const entry of [
     ...staticPages,
     ...serviceUrls,
+    ...Array.from(cmsByPath.values()),
     ...caseStudyUrls,
     ...freebieUrls,
     ...blogUrls,
     ...techNewsUrls,
-    ...cmsUrls,
-  ];
+  ]) {
+    if (seen.has(entry.url)) continue;
+    seen.add(entry.url);
+    merged.push(entry);
+  }
+
+  return merged;
 }

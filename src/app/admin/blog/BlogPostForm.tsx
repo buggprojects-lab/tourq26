@@ -10,6 +10,7 @@ import { BlogPostPreview } from "@/components/admin/BlogPostPreview";
 import { SerpPreview } from "@/components/admin/SerpPreview";
 import { SocialPreview } from "@/components/admin/SocialPreview";
 import { TagInput } from "@/components/admin/TagInput";
+import { generateSeoFromContent, stripHtmlToText } from "@/lib/seo-generate";
 
 type Props = {
   post?: BlogPost;
@@ -31,12 +32,7 @@ function slugify(value: string) {
 }
 
 function stripHtml(html: string) {
-  if (typeof document === "undefined") {
-    return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  }
-  const d = document.createElement("div");
-  d.innerHTML = html;
-  return (d.textContent || d.innerText || "").replace(/\s+/g, " ").trim();
+  return stripHtmlToText(html);
 }
 
 function deriveReadTime(html: string) {
@@ -88,6 +84,21 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
 
   const effectiveSlug = slugTouched ? slug : slugify(title);
   const effectiveReadTime = readTimeTouched ? readTime : deriveReadTime(body);
+
+  function generateSeo() {
+    const generated = generateSeoFromContent({
+      title,
+      excerpt: excerpt || description,
+      bodyText: stripHtml(body),
+      focusKeyword,
+    });
+    setSeoTitle(generated.metaTitle);
+    setDescription(generated.metaDescription);
+    if (!excerpt.trim()) {
+      setExcerpt(generated.metaDescription);
+    }
+    setTab("seo");
+  }
 
   // Draft autosave to localStorage (new posts only)
   const skipFirstAutosave = useRef(true);
@@ -355,9 +366,22 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
 
           {tab === "seo" ? (
             <div className="space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Live Google and social previews. Generate meta from the post body anytime.
+                </p>
+                <button
+                  type="button"
+                  className="btn-base btn-secondary"
+                  onClick={generateSeo}
+                  disabled={!title.trim() && !body.trim()}
+                >
+                  Generate from content
+                </button>
+              </div>
               <SerpPreview
                 siteUrl={siteUrl}
-                slug={effectiveSlug}
+                path={effectiveSlug ? `/blog/${effectiveSlug}` : "/blog"}
                 title={(seoTitle.trim() || title) + (siteName ? ` | ${siteName}` : "")}
                 description={description}
               />
@@ -443,6 +467,14 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
           </Card>
 
           <Card title="SEO">
+            <button
+              type="button"
+              className="btn-base btn-secondary mb-3 w-full"
+              onClick={generateSeo}
+              disabled={!title.trim() && !body.trim()}
+            >
+              Generate from content
+            </button>
             <SidebarField label="SEO TITLE">
               <input
                 type="text"

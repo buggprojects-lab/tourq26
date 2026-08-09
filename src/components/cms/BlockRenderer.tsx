@@ -1,5 +1,10 @@
 import Link from "next/link";
 import type { CmsBlock } from "@/lib/cms/blocks";
+import { sanitizeBlogHtml } from "@/lib/blog-sanitize";
+
+function looksLikeHtml(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
 
 function CtaButtons({
   primaryLabel,
@@ -75,7 +80,9 @@ export function BlockRenderer({ blocks }: { blocks: CmsBlock[] }) {
                     ) : null}
                     <div
                       className="blog-article mt-5 max-w-none"
-                      dangerouslySetInnerHTML={{ __html: block.bodyHtml }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeBlogHtml(block.bodyHtml),
+                      }}
                     />
                   </div>
                 </div>
@@ -121,9 +128,18 @@ export function BlockRenderer({ blocks }: { blocks: CmsBlock[] }) {
                           className="border-t border-hairline pt-6 first:border-t-0 first:pt-0"
                         >
                           <h3 className="display-sm text-foreground">{f.question}</h3>
-                          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-                            {f.answer}
-                          </p>
+                          {looksLikeHtml(f.answer) ? (
+                            <div
+                              className="blog-article mt-3 max-w-none text-[15px] leading-relaxed text-muted-foreground"
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeBlogHtml(f.answer),
+                              }}
+                            />
+                          ) : (
+                            <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+                              {f.answer}
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -157,13 +173,24 @@ export function BlockRenderer({ blocks }: { blocks: CmsBlock[] }) {
                       {block.heading}
                     </h2>
                     {block.body ? (
-                      <p
-                        className={`mt-4 max-w-xl text-[15px] leading-relaxed ${
-                          block.dark ? "text-white/70" : "text-muted-foreground"
-                        }`}
-                      >
-                        {block.body}
-                      </p>
+                      looksLikeHtml(block.body) ? (
+                        <div
+                          className={`blog-article mt-4 max-w-xl text-[15px] leading-relaxed ${
+                            block.dark ? "[&_*]:text-white/70" : "text-muted-foreground"
+                          }`}
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeBlogHtml(block.body),
+                          }}
+                        />
+                      ) : (
+                        <p
+                          className={`mt-4 max-w-xl text-[15px] leading-relaxed ${
+                            block.dark ? "text-white/70" : "text-muted-foreground"
+                          }`}
+                        >
+                          {block.body}
+                        </p>
+                      )
                     ) : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 lg:col-span-5 lg:justify-end lg:pt-8">
