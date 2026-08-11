@@ -302,15 +302,21 @@ export async function writeSiteContent(data: SiteContent): Promise<void> {
 // --- Contact form submissions (append-only, admin view only) ---
 
 export async function readContactSubmissions(): Promise<ContactSubmission[]> {
-  const rows = await prisma.contactSubmission.findMany({ orderBy: { createdAt: "desc" } });
-  return rows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    company: c.company ?? "",
-    message: c.message,
-    createdAt: c.createdAt.toISOString(),
-  }));
+  try {
+    const rows = await withDbTimeout(
+      prisma.contactSubmission.findMany({ orderBy: { createdAt: "desc" } }),
+    );
+    return rows.map((c) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      company: c.company ?? "",
+      message: c.message,
+      createdAt: c.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function addContactSubmission(input: {
