@@ -4,6 +4,7 @@ import "./globals.css";
 import { readSiteContent } from "@/lib/content";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { readBrandContent, findBrandFont } from "@/lib/brand-content";
 
 // Display sans — closest open-source match to the brand's custom "The Future"
 // face (DESIGN.md → typography). Inter at 400/500 with negative tracking is
@@ -31,10 +32,11 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const site = await readSiteContent();
+  const [site, brand] = await Promise.all([readSiteContent(), readBrandContent()]);
   const siteUrl = site.siteUrl.replace(/\/$/, "");
   return {
     metadataBase: new URL(siteUrl),
+    ...(brand.faviconUrl ? { icons: { icon: brand.faviconUrl } } : {}),
     title: {
       default: site.defaultTitle,
       template: site.titleTemplate,
@@ -82,11 +84,25 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [site, showWhatsApp] = await Promise.all([
+  const [site, showWhatsApp, brand] = await Promise.all([
     readSiteContent(),
     isFeatureEnabled("floating_whatsapp"),
+    readBrandContent(),
   ]);
   const siteUrl = site.siteUrl.replace(/\/$/, "");
+
+  const cssVarOverrides: string[] = [];
+  if (brand.colorPrimary) {
+    cssVarOverrides.push(`--app-primary:${brand.colorPrimary}`, `--app-primary-hover:${brand.colorPrimary}`);
+  }
+  if (brand.colorAccent) {
+    cssVarOverrides.push(`--brand-mint:${brand.colorAccent}`, `--app-accent:${brand.colorAccent}`);
+  }
+  const headingFont = findBrandFont(brand.fontHeading);
+  const bodyFont = findBrandFont(brand.fontBody);
+  if (headingFont) cssVarOverrides.push(`--font-display-stack:'${headingFont.family}',var(--font-inter),sans-serif`);
+  if (bodyFont) cssVarOverrides.push(`--font-body-stack:'${bodyFont.family}',var(--font-inter),sans-serif`);
+  const googleFontsSlugs = [headingFont?.googleFontsSlug, bodyFont?.googleFontsSlug].filter(Boolean) as string[];
 
   const organizationJsonLd = {
     "@context": "https://schema.org",
@@ -110,6 +126,20 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      {googleFontsSlugs.length || cssVarOverrides.length ? (
+        <head>
+          {googleFontsSlugs.map((slug) => (
+            <link
+              key={slug}
+              rel="stylesheet"
+              href={`https://fonts.googleapis.com/css2?family=${slug}&display=swap`}
+            />
+          ))}
+          {cssVarOverrides.length ? (
+            <style dangerouslySetInnerHTML={{ __html: `:root{${cssVarOverrides.join(";")}}` }} />
+          ) : null}
+        </head>
+      ) : null}
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <script
           type="application/ld+json"

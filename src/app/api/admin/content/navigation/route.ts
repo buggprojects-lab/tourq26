@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readPrimaryNav, writePrimaryNav, type NavLink } from "@/lib/nav-content";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -24,6 +25,7 @@ export async function PUT(request: NextRequest) {
     )
     .map((l) => ({ label: l.label.trim(), href: l.href.trim(), openInNewTab: !!l.openInNewTab }));
   await writePrimaryNav(links);
+  void logActivity({ entityType: "navigation", action: "updated", summary: "Updated primary navigation" });
   revalidatePath("/", "layout");
   return NextResponse.json({ links });
 }

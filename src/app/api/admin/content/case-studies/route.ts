@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readCaseStudies, writeCaseStudies, type CaseStudy } from "@/lib/case-studies-content";
 import { slugify } from "@/lib/blog-server";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
     body: raw.body ?? "",
   };
   await writeCaseStudies([...items, newItem]);
+  void logActivity({ entityType: "case-study", entityId: newItem.slug, action: "created", summary: `Created case study "${newItem.title}"` });
   revalidatePath("/");
   revalidatePath("/case-studies");
   revalidatePath(`/case-studies/${newItem.slug}`);

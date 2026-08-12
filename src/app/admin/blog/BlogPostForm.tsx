@@ -10,6 +10,7 @@ import { BlogPostPreview } from "@/components/admin/BlogPostPreview";
 import { SerpPreview } from "@/components/admin/SerpPreview";
 import { SocialPreview } from "@/components/admin/SocialPreview";
 import { TagInput } from "@/components/admin/TagInput";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 import { generateSeoFromContent, stripHtmlToText } from "@/lib/seo-generate";
 
 type Props = {
@@ -341,6 +342,21 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
                 label="Body"
                 hint="Rich text: H2–H3, lists, blockquote, code, links. Don't add another H1."
               >
+                <div className="mb-2 flex justify-end">
+                  <AiGenerateButton<string>
+                    task="longFormBody"
+                    variant="inline"
+                    context={{
+                      title,
+                      contentType: "blog",
+                      brief: [description, focusKeyword && `Focus keyword: ${focusKeyword}`, tags.length && `Tags: ${tags.join(", ")}`]
+                        .filter(Boolean)
+                        .join(". "),
+                    }}
+                    onResult={setBody}
+                    disabled={!title.trim()}
+                  />
+                </div>
                 <div className="mt-1">
                   <RichTextEditor
                     value={body}
@@ -370,14 +386,26 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
                 <p className="text-sm text-muted-foreground">
                   Live Google and social previews. Generate meta from the post body anytime.
                 </p>
-                <button
-                  type="button"
-                  className="btn-base btn-secondary"
-                  onClick={generateSeo}
-                  disabled={!title.trim() && !body.trim()}
-                >
-                  Generate from content
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn-base btn-secondary"
+                    onClick={generateSeo}
+                    disabled={!title.trim() && !body.trim()}
+                  >
+                    Generate from content
+                  </button>
+                  <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+                    task="seoMetaPair"
+                    context={{ title, focusKeyword, bodyText: stripHtml(body) || excerpt || description }}
+                    onResult={({ metaTitle, metaDescription }) => {
+                      setSeoTitle(metaTitle);
+                      setDescription(metaDescription);
+                    }}
+                    label="Generate with AI"
+                    disabled={!title.trim() && !body.trim()}
+                  />
+                </div>
               </div>
               <SerpPreview
                 siteUrl={siteUrl}
@@ -467,14 +495,27 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
           </Card>
 
           <Card title="SEO">
-            <button
-              type="button"
-              className="btn-base btn-secondary mb-3 w-full"
-              onClick={generateSeo}
-              disabled={!title.trim() && !body.trim()}
-            >
-              Generate from content
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-base btn-secondary mb-3 w-full"
+                onClick={generateSeo}
+                disabled={!title.trim() && !body.trim()}
+              >
+                Generate from content
+              </button>
+              <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+                task="seoMetaPair"
+                variant="inline"
+                context={{ title, focusKeyword, bodyText: stripHtml(body) || excerpt || description }}
+                onResult={({ metaTitle, metaDescription }) => {
+                  setSeoTitle(metaTitle);
+                  setDescription(metaDescription);
+                }}
+                label="AI"
+                disabled={!title.trim() && !body.trim()}
+              />
+            </div>
             <SidebarField label="SEO TITLE">
               <input
                 type="text"
@@ -488,6 +529,15 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
               </p>
             </SidebarField>
             <SidebarField label="EXCERPT (CARDS)">
+              <div className="mb-1 flex justify-end">
+                <AiGenerateButton<string>
+                  task="excerpt"
+                  variant="inline"
+                  context={{ title, bodyText: stripHtml(body) || description }}
+                  onResult={setExcerpt}
+                  disabled={!title.trim() && !body.trim()}
+                />
+              </div>
               <textarea
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
@@ -509,6 +559,16 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
               </p>
             </SidebarField>
             <SidebarField label="TAGS">
+              <div className="mb-1 flex justify-end">
+                <AiGenerateButton<{ keywords: string[] }>
+                  task="keywordSuggestions"
+                  variant="inline"
+                  label="Suggest"
+                  context={{ title, bodyText: stripHtml(body) || description }}
+                  onResult={({ keywords }) => setTags(Array.from(new Set([...tags, ...keywords])))}
+                  disabled={!title.trim() && !body.trim()}
+                />
+              </div>
               <TagInput value={tags} onChange={setTags} />
             </SidebarField>
             <SidebarField label="COVER IMAGE URL">

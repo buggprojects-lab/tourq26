@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readCaseStudies, writeCaseStudies, type CaseStudy } from "@/lib/case-studies-content";
 import { slugify } from "@/lib/blog-server";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET(
   _request: NextRequest,
@@ -59,6 +60,7 @@ export async function PUT(
   };
   items[index] = updated;
   await writeCaseStudies(items);
+  void logActivity({ entityType: "case-study", entityId: updated.slug, action: "updated", summary: `Updated case study "${updated.title}"` });
   revalidatePath("/");
   revalidatePath("/case-studies");
   revalidatePath(`/case-studies/${updated.slug}`);
@@ -77,6 +79,7 @@ export async function DELETE(
   const filtered = items.filter((c) => c.slug !== slug);
   if (filtered.length === items.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
   await writeCaseStudies(filtered);
+  void logActivity({ entityType: "case-study", entityId: slug, action: "deleted", summary: `Deleted case study "${slug}"` });
   revalidatePath("/");
   revalidatePath("/case-studies");
   revalidatePath(`/case-studies/${slug}`);

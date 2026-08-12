@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readBlogPosts, writeBlogPosts, type BlogPost } from "@/lib/content";
 import { normaliseBlogInput, slugify } from "@/lib/blog-server";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
   const newPost: BlogPost = { ...candidate, slug };
   posts.push(newPost);
   await writeBlogPosts(posts);
+  void logActivity({ entityType: "blog", entityId: newPost.slug, action: "created", summary: `Created blog post "${newPost.title}"` });
   revalidatePath("/blog");
   revalidatePath(`/blog/${newPost.slug}`);
   return NextResponse.json(newPost);

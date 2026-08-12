@@ -6,6 +6,8 @@ import Link from "next/link";
 import type { CaseStudy } from "@/lib/case-studies-content";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { TagInput } from "@/components/admin/TagInput";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { stripHtmlToText } from "@/lib/seo-generate";
 import { slugify } from "@/lib/blog-server";
 
 const inputClass =
@@ -159,7 +161,21 @@ export function CaseStudyForm({ item }: { item?: CaseStudy }) {
           </p>
         </div>
         <Field label="SEO title (optional, shorter H1/social title)" value={data.seoTitle ?? ""} onChange={(v) => update("seoTitle", v)} />
-        <Field label="Description (card + meta description)" value={data.description} onChange={(v) => update("description", v)} textarea rows={2} />
+        <div>
+          <Field label="Description (card + meta description)" value={data.description} onChange={(v) => update("description", v)} textarea rows={2} />
+          <div className="mt-2">
+            <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+              task="seoMetaPair"
+              variant="inline"
+              context={{ title: data.title, bodyText: stripHtmlToText(data.body) || data.challenge || data.description }}
+              onResult={({ metaTitle, metaDescription }) => {
+                update("seoTitle", metaTitle);
+                update("description", metaDescription);
+              }}
+              disabled={!data.title.trim()}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="card-flat space-y-4">
@@ -175,7 +191,17 @@ export function CaseStudyForm({ item }: { item?: CaseStudy }) {
           <Field label="Metric label" value={data.metricLabel} onChange={(v) => update("metricLabel", v)} placeholder="Time to store launch" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground/90">Services (press Enter or comma to add)</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="block text-sm font-medium text-foreground/90">Services (press Enter or comma to add)</label>
+            <AiGenerateButton<{ keywords: string[] }>
+              task="keywordSuggestions"
+              variant="inline"
+              label="Suggest"
+              context={{ title: data.title, bodyText: [data.challenge, data.outcome, data.description].filter(Boolean).join(". ") }}
+              onResult={({ keywords }) => update("services", Array.from(new Set([...data.services, ...keywords])))}
+              disabled={!data.title.trim()}
+            />
+          </div>
           <div className="mt-1">
             <TagInput value={data.services} onChange={(v) => update("services", v)} placeholder="Add a service…" max={8} />
           </div>
@@ -196,8 +222,29 @@ export function CaseStudyForm({ item }: { item?: CaseStudy }) {
       </section>
 
       <section className="card-flat space-y-4">
-        <h2 className="display-sm text-foreground">Body</h2>
-        <p className="text-sm text-muted-foreground">The full write-up shown on the case study&apos;s detail page.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="display-sm text-foreground">Body</h2>
+            <p className="text-sm text-muted-foreground">The full write-up shown on the case study&apos;s detail page.</p>
+          </div>
+          <AiGenerateButton<string>
+            task="longFormBody"
+            context={{
+              title: data.title,
+              contentType: "caseStudy",
+              brief: [
+                data.client && `Client: ${data.client}`,
+                data.industry && `Industry: ${data.industry}`,
+                data.challenge && `Challenge: ${data.challenge}`,
+                data.outcome && `Outcome: ${data.outcome}`,
+              ]
+                .filter(Boolean)
+                .join(". "),
+            }}
+            onResult={(html) => update("body", html)}
+            disabled={!data.title.trim()}
+          />
+        </div>
         <RichTextEditor value={data.body} onChange={(html) => update("body", html)} minHeight="20rem" />
       </section>
 

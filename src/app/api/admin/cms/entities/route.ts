@@ -6,6 +6,7 @@ import {
   listEntities,
   seedCmsEntities,
 } from "@/lib/cms/entities";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET(request: NextRequest) {
   const ok = await requireAdmin();
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
 
   if (body.action === "seed") {
     const counts = await seedCmsEntities();
+    void logActivity({ entityType: "cms-entities", action: "created", summary: "Seeded CMS entities" });
     return NextResponse.json({ ok: true, counts });
   }
 
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
       body.slug,
     );
     if (!page) return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+    void logActivity({ entityType: "cms-entities", entityId: page.id, action: "created", summary: `Ensured entity page for ${body.kind} "${body.slug}"` });
     return NextResponse.json(page);
   }
 

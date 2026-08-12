@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readHomeContent, writeHomeContent, type HomeContent } from "@/lib/home-content";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -17,6 +18,7 @@ export async function PUT(request: NextRequest) {
   const current = await readHomeContent();
   const data: HomeContent = { ...current, ...body };
   await writeHomeContent(data);
+  void logActivity({ entityType: "home", action: "updated", summary: "Updated homepage content" });
   revalidatePath("/");
   return NextResponse.json(data);
 }

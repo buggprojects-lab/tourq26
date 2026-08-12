@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readBlogPosts, writeBlogPosts, type BlogPost } from "@/lib/content";
 import { normaliseBlogInput, slugify } from "@/lib/blog-server";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET(
   _request: NextRequest,
@@ -40,6 +41,12 @@ export async function PUT(
   const updated: BlogPost = { ...candidate, slug: nextSlug };
   posts[index] = updated;
   await writeBlogPosts(posts);
+  void logActivity({
+    entityType: "blog",
+    entityId: updated.slug,
+    action: updated.status === "published" ? "published" : "updated",
+    summary: `Updated blog post "${updated.title}"`,
+  });
   revalidatePath("/blog");
   revalidatePath(`/blog/${updated.slug}`);
   if (updated.slug !== slug) revalidatePath(`/blog/${slug}`);
@@ -57,6 +64,7 @@ export async function DELETE(
   const filtered = posts.filter((p) => p.slug !== slug);
   if (filtered.length === posts.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
   await writeBlogPosts(filtered);
+  void logActivity({ entityType: "blog", entityId: slug, action: "deleted", summary: `Deleted blog post "${slug}"` });
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
   return NextResponse.json({ ok: true });

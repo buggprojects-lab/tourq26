@@ -34,9 +34,11 @@ function buildNavLinks(
 export default function Header({
   navLinks = [],
   navFlags,
+  logoUrl,
 }: {
   navLinks?: NavLink[];
   navFlags?: HeaderNavFlags;
+  logoUrl?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -67,7 +69,14 @@ export default function Header({
           href="/"
           className="font-display text-[20px] font-medium tracking-[-0.02em] text-inherit transition-opacity hover:opacity-80"
         >
-          torq<span className="brand-gradient-text">.studio</span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="" className="h-7 w-auto" />
+          ) : (
+            <>
+              torq<span className="brand-gradient-text">.studio</span>
+            </>
+          )}
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">

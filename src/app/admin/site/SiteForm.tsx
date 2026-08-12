@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SiteContent } from "@/lib/content";
 import { SerpPreview } from "@/components/admin/SerpPreview";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 
 function CharHint({ value, softMax, label }: { value: string; softMax: number; label: string }) {
   const n = value.length;
@@ -87,7 +88,18 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
       </section>
 
       <section className="card-flat space-y-4">
-        <h2 className="display-sm text-foreground">Default page meta (home & fallbacks)</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="display-sm text-foreground">Default page meta (home & fallbacks)</h2>
+          <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+            task="seoMetaPair"
+            context={{ title: data.siteName, bodyText: `${data.siteName} — a software studio's marketing site and homepage.` }}
+            onResult={({ metaTitle, metaDescription }) => {
+              update("defaultTitle", metaTitle);
+              update("defaultDescription", metaDescription);
+            }}
+            disabled={!data.siteName.trim()}
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Used by the root layout for the homepage and as site-wide defaults. Aim for ~50–60 characters in the title and
           ~140–160 in the description for search snippets.
@@ -135,7 +147,18 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
       </section>
 
       <section className="card-flat space-y-4">
-        <h2 className="display-sm text-foreground">Open Graph (Facebook, LinkedIn, etc.)</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="display-sm text-foreground">Open Graph (Facebook, LinkedIn, etc.)</h2>
+          <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+            task="seoMetaPair"
+            context={{ title: data.siteName, bodyText: data.defaultDescription || `${data.siteName} — a software studio.` }}
+            onResult={({ metaTitle, metaDescription }) => {
+              update("ogTitle", metaTitle);
+              update("ogDescription", metaDescription);
+            }}
+            disabled={!data.siteName.trim()}
+          />
+        </div>
         <p className="text-sm text-muted-foreground">Shown when links are shared; can match defaults or be customized.</p>
         <div>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -164,7 +187,18 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
       </section>
 
       <section className="card-flat space-y-4">
-        <h2 className="display-sm text-foreground">X (Twitter) Card</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="display-sm text-foreground">X (Twitter) Card</h2>
+          <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+            task="seoMetaPair"
+            context={{ title: data.siteName, bodyText: data.defaultDescription || `${data.siteName} — a software studio.` }}
+            onResult={({ metaTitle, metaDescription }) => {
+              update("twitterTitle", metaTitle);
+              update("twitterDescription", metaDescription);
+            }}
+            disabled={!data.siteName.trim()}
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Twitter/X uses these when set; they default in code from site content for the root layout.
         </p>
@@ -209,7 +243,22 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
       <section className="card-flat space-y-4">
         <h2 className="display-sm text-foreground">Keywords & social URLs</h2>
         <div>
-          <label className="block text-sm font-medium text-foreground/90">Keywords (one per line or comma-separated)</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="block text-sm font-medium text-foreground/90">Keywords (one per line or comma-separated)</label>
+            <AiGenerateButton<{ keywords: string[] }>
+              task="keywordSuggestions"
+              variant="inline"
+              label="Suggest"
+              context={{ title: data.siteName, bodyText: data.defaultDescription || data.siteName }}
+              onResult={({ keywords }) =>
+                update(
+                  "keywords",
+                  Array.from(new Set([...(Array.isArray(data.keywords) ? data.keywords : []), ...keywords])),
+                )
+              }
+              disabled={!data.siteName.trim()}
+            />
+          </div>
           <textarea
             value={Array.isArray(data.keywords) ? data.keywords.join("\n") : ""}
             onChange={(e) =>

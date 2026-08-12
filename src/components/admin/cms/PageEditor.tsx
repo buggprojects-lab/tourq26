@@ -15,6 +15,7 @@ import {
 } from "@/lib/seo-generate";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { SerpPreview } from "@/components/admin/SerpPreview";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 
 type PageEditorProps = {
   mode: "create" | "edit";
@@ -239,7 +240,16 @@ export function PageEditor({
           />
         </label>
         <label className="block text-sm lg:col-span-2">
-          <span className="mono-label text-muted-foreground">Excerpt</span>
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="mono-label text-muted-foreground">Excerpt</span>
+            <AiGenerateButton<string>
+              task="excerpt"
+              variant="inline"
+              context={{ title, bodyText: extractTextFromCmsBlocks(blocks) }}
+              onResult={setExcerpt}
+              disabled={!title.trim() && blocks.length === 0}
+            />
+          </span>
           <textarea
             className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
             rows={2}
@@ -313,7 +323,12 @@ export function PageEditor({
                   </button>
                 </div>
               </div>
-              <BlockFields block={block} onChange={(patch) => updateBlock(block.id, patch)} />
+              <BlockFields
+                block={block}
+                pageTitle={title}
+                pageContext={excerpt}
+                onChange={(patch) => updateBlock(block.id, patch)}
+              />
             </li>
           ))}
         </ul>
@@ -327,14 +342,26 @@ export function PageEditor({
               Generate meta from title, excerpt, and page blocks, then refine below.
             </p>
           </div>
-          <button
-            type="button"
-            className="btn-base btn-secondary"
-            onClick={generateSeo}
-            disabled={!title.trim() && !excerpt.trim() && blocks.length === 0}
-          >
-            Generate from content
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-base btn-secondary"
+              onClick={generateSeo}
+              disabled={!title.trim() && !excerpt.trim() && blocks.length === 0}
+            >
+              Generate from content
+            </button>
+            <AiGenerateButton<{ metaTitle: string; metaDescription: string }>
+              task="seoMetaPair"
+              context={{ title, focusKeyword: focusKeyword || targetKeyword, bodyText: extractTextFromCmsBlocks(blocks) || excerpt }}
+              onResult={({ metaTitle: mt, metaDescription: md }) => {
+                setMetaTitle(mt);
+                setMetaDescription(md);
+              }}
+              label="Generate with AI"
+              disabled={!title.trim() && !excerpt.trim() && blocks.length === 0}
+            />
+          </div>
         </div>
 
         <div className="lg:col-span-2">
@@ -423,8 +450,27 @@ export function PageEditor({
           />
         </label>
         <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">
-            Secondary keywords (comma-separated)
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="mono-label text-muted-foreground">
+              Secondary keywords (comma-separated)
+            </span>
+            <AiGenerateButton<{ keywords: string[] }>
+              task="keywordSuggestions"
+              variant="inline"
+              label="Suggest"
+              context={{ title, bodyText: extractTextFromCmsBlocks(blocks) || excerpt }}
+              onResult={({ keywords }) =>
+                setSecondaryKeywords(
+                  Array.from(
+                    new Set([
+                      ...secondaryKeywords.split(",").map((s) => s.trim()).filter(Boolean),
+                      ...keywords,
+                    ]),
+                  ).join(", "),
+                )
+              }
+              disabled={!title.trim() && blocks.length === 0}
+            />
           </span>
           <input
             className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
@@ -463,14 +509,29 @@ export function PageEditor({
 
 function BlockFields({
   block,
+  pageTitle,
+  pageContext,
   onChange,
 }: {
   block: CmsBlock;
+  pageTitle: string;
+  pageContext: string;
   onChange: (patch: Partial<CmsBlock>) => void;
 }) {
   if (block.type === "hero") {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2 flex justify-end">
+          <AiGenerateButton<{ eyebrow: string; heading: string; subheading: string }>
+            task="heroCopy"
+            variant="inline"
+            context={{
+              topic: [pageTitle, pageContext].filter(Boolean).join(" — ") || "this page",
+              purpose: "convert a first-time visitor into a lead",
+            }}
+            onResult={({ eyebrow, heading, subheading }) => onChange({ eyebrow, heading, subheading })}
+          />
+        </div>
         <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
         <Field label="Heading" value={block.heading} onChange={(v) => onChange({ heading: v })} />
         <Field
@@ -500,7 +561,15 @@ function BlockFields({
         <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
         <Field label="Heading" value={block.heading ?? ""} onChange={(v) => onChange({ heading: v })} />
         <div className="block text-sm">
-          <span className="mono-label text-muted-foreground">Body</span>
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="mono-label text-muted-foreground">Body</span>
+            <AiGenerateButton<string>
+              task="longFormBody"
+              variant="inline"
+              context={{ title: block.heading || pageTitle, contentType: "section", brief: pageContext || block.heading || pageTitle }}
+              onResult={(html) => onChange({ bodyHtml: html })}
+            />
+          </span>
           <div className="mt-1.5">
             <RichTextEditor
               value={block.bodyHtml}
@@ -517,6 +586,19 @@ function BlockFields({
   if (block.type === "cta") {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2 flex justify-end">
+          <AiGenerateButton<{ heading: string; body: string; primaryCtaLabel: string }>
+            task="ctaCopy"
+            variant="inline"
+            context={{
+              purpose: pageTitle
+                ? `Convince a visitor to take the next step on the "${pageTitle}" page`
+                : "Convince a visitor to take the next step",
+              audience: "a prospective client evaluating this page",
+            }}
+            onResult={({ heading, body, primaryCtaLabel }) => onChange({ heading, body, primaryCtaLabel })}
+          />
+        </div>
         <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
         <Field label="Heading" value={block.heading} onChange={(v) => onChange({ heading: v })} />
         <div className="block text-sm sm:col-span-2">
@@ -570,17 +652,30 @@ function BlockFields({
                 <span className="mono-label text-muted-foreground">
                   Q{String(i + 1).padStart(2, "0")}
                 </span>
-                <button
-                  type="button"
-                  className="btn-base btn-secondary !px-2 !py-1 text-xs"
-                  onClick={() =>
-                    onChange({
-                      items: block.items.filter((_, idx) => idx !== i),
-                    })
-                  }
-                >
-                  Remove
-                </button>
+                <div className="flex items-center gap-2">
+                  <AiGenerateButton<{ question: string; answer: string }>
+                    task="faqItem"
+                    variant="inline"
+                    context={{ topic: block.heading || pageTitle, pageContext }}
+                    onResult={({ question, answer }) => {
+                      const items = block.items.map((it, idx) =>
+                        idx === i ? { ...it, question, answer } : it,
+                      );
+                      onChange({ items });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                    onClick={() =>
+                      onChange({
+                        items: block.items.filter((_, idx) => idx !== i),
+                      })
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
               <Field
                 label="Question"
@@ -643,7 +738,18 @@ function BlockFields({
               key={`${block.id}-feat-${i}`}
               className="rounded-md border border-border/50 bg-background/60 p-3"
             >
-              <div className="mb-2 flex justify-end">
+              <div className="mb-2 flex justify-end gap-2">
+                <AiGenerateButton<{ title: string; description: string }>
+                  task="itemCopy"
+                  variant="inline"
+                  context={{ theme: block.heading || pageTitle, kind: "feature" }}
+                  onResult={({ title: t, description }) => {
+                    const items = block.items.map((it, idx) =>
+                      idx === i ? { ...it, title: t, description } : it,
+                    );
+                    onChange({ items });
+                  }}
+                />
                 <button
                   type="button"
                   className="btn-base btn-secondary !px-2 !py-1 text-xs"

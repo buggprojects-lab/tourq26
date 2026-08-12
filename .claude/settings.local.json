@@ -9,7 +9,15 @@
       "Bash(npx tsc *)",
       "Bash(timeout 300 npm run build)",
       "Bash(kill -0 10176)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(ollama list *)",
+      "Bash(sysctl -n hw.memsize)",
+      "Bash(awk '{print $1/1024/1024/1024 \" GB RAM\"}')",
+      "Bash(system_profiler SPDisplaysDataType)",
+      "Bash(ollama show *)",
+      "Bash(curl -s http://localhost:11434/api/version)",
+      "Bash(curl -s http://localhost:11434/v1/models)",
+      "Bash(ollama pull *)"
     ]
   }
 }

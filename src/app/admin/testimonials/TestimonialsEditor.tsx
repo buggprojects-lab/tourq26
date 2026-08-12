@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Testimonial } from "@/lib/content";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 
 export function TestimonialsEditor({ initialItems }: { initialItems: Testimonial[] }) {
   const router = useRouter();
@@ -71,7 +72,20 @@ export function TestimonialsEditor({ initialItems }: { initialItems: Testimonial
             </button>
           </div>
           <div>
-            <label className="block text-sm text-muted-foreground">Quote</label>
+            <div className="flex items-baseline justify-between gap-2">
+              <label className="block text-sm text-muted-foreground">Quote</label>
+              <AiGenerateButton<{ quote: string; result: string }>
+                task="polishQuote"
+                variant="inline"
+                label="Polish wording"
+                context={{ rawQuote: item.quote, result: item.result }}
+                onResult={({ quote, result }) => {
+                  update(index, "quote", quote);
+                  if (result) update(index, "result", result);
+                }}
+                disabled={!item.quote.trim()}
+              />
+            </div>
             <textarea
               value={item.quote}
               onChange={(e) => update(index, "quote", e.target.value)}

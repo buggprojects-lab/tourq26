@@ -10,6 +10,7 @@ import {
   updatePage,
   type UpsertPageInput,
 } from "@/lib/cms/pages";
+import { logActivity } from "@/lib/activity-log";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 
   if (body.action === "publish") {
     const page = await publishPage(id);
+    void logActivity({ entityType: "cms-page", entityId: id, action: "published", summary: `Published CMS page "${page?.title ?? id}"` });
     if (page?.path) {
       revalidatePath(page.path);
       revalidatePath("/sitemap.xml");
@@ -43,6 +45,12 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       body.toStatus as WorkflowStatus,
       body.comment != null ? String(body.comment) : undefined,
     );
+    void logActivity({
+      entityType: "cms-page",
+      entityId: id,
+      action: page?.status === "PUBLISHED" ? "published" : "updated",
+      summary: `Transitioned CMS page "${page?.title ?? id}" to ${body.toStatus}`,
+    });
     if (page?.status === "PUBLISHED" && page.path) {
       revalidatePath(page.path);
       revalidatePath("/sitemap.xml");
@@ -66,6 +74,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
     const page = await updatePage(id, patch);
     if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    void logActivity({ entityType: "cms-page", entityId: id, action: "updated", summary: `Updated CMS page "${page.title}"` });
     if (page.status === "PUBLISHED") {
       revalidatePath(page.path);
     }
@@ -86,6 +95,7 @@ export async function DELETE(_request: NextRequest, ctx: Ctx) {
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.page.delete({ where: { id } });
+  void logActivity({ entityType: "cms-page", entityId: id, action: "deleted", summary: `Deleted CMS page "${page.title}"` });
   revalidatePath("/admin/cms/pages");
   if (page.path) revalidatePath(page.path);
   return NextResponse.json({ ok: true });

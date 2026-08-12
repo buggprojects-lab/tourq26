@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HomeContent, ServiceItem, WhyUsItem } from "@/lib/home-content";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground";
@@ -127,8 +128,21 @@ export function HomeContentForm({ initialData }: { initialData: HomeContent }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-8 max-w-3xl space-y-10">
       <section className="card-flat space-y-4">
-        <h2 className="font-display text-base font-semibold text-foreground">Hero</h2>
-        <p className="text-sm text-muted-foreground">The top banner — first thing every visitor sees.</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-base font-semibold text-foreground">Hero</h2>
+            <p className="text-sm text-muted-foreground">The top banner — first thing every visitor sees.</p>
+          </div>
+          <AiGenerateButton<{ eyebrow: string; heading: string; subheading: string }>
+            task="heroCopy"
+            context={{ topic: "a software studio's homepage", purpose: "convert a first-time visitor into a lead" }}
+            onResult={({ eyebrow, heading, subheading }) => {
+              update("heroEyebrow", eyebrow);
+              update("heroHeading", heading);
+              update("heroSubheading", subheading);
+            }}
+          />
+        </div>
         <Field label="Eyebrow" value={data.heroEyebrow} onChange={(v) => update("heroEyebrow", v)} />
         <Field label="Headline" value={data.heroHeading} onChange={(v) => update("heroHeading", v)} textarea rows={2} />
         <Field label="Subheading" value={data.heroSubheading} onChange={(v) => update("heroSubheading", v)} textarea />
@@ -159,12 +173,20 @@ export function HomeContentForm({ initialData }: { initialData: HomeContent }) {
             <div key={i} className="rounded-lg border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="mono-label text-muted-foreground">SERVICE {i + 1}</p>
-                <ReorderButtons
-                  index={i}
-                  count={data.servicesItems.length}
-                  onMove={(from, to) => update("servicesItems", reorder(data.servicesItems, from, to))}
-                  onRemove={(idx) => update("servicesItems", data.servicesItems.filter((_, j) => j !== idx))}
-                />
+                <div className="flex items-center gap-2">
+                  <AiGenerateButton<{ title: string; description: string }>
+                    task="itemCopy"
+                    variant="inline"
+                    context={{ theme: item.category || data.servicesHeading || "software studio services", kind: "service" }}
+                    onResult={({ title, description }) => updateServiceItem(i, { title, description })}
+                  />
+                  <ReorderButtons
+                    index={i}
+                    count={data.servicesItems.length}
+                    onMove={(from, to) => update("servicesItems", reorder(data.servicesItems, from, to))}
+                    onRemove={(idx) => update("servicesItems", data.servicesItems.filter((_, j) => j !== idx))}
+                  />
+                </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Category label" value={item.category} onChange={(v) => updateServiceItem(i, { category: v })} />
@@ -200,12 +222,20 @@ export function HomeContentForm({ initialData }: { initialData: HomeContent }) {
             <div key={i} className="rounded-lg border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="mono-label text-muted-foreground">REASON {i + 1}</p>
-                <ReorderButtons
-                  index={i}
-                  count={data.whyUsItems.length}
-                  onMove={(from, to) => update("whyUsItems", reorder(data.whyUsItems, from, to))}
-                  onRemove={(idx) => update("whyUsItems", data.whyUsItems.filter((_, j) => j !== idx))}
-                />
+                <div className="flex items-center gap-2">
+                  <AiGenerateButton<{ title: string; description: string }>
+                    task="itemCopy"
+                    variant="inline"
+                    context={{ theme: item.eyebrow || data.whyUsHeading || "why choose this studio", kind: "whyUs" }}
+                    onResult={({ title, description }) => updateWhyUsItem(i, { title, description })}
+                  />
+                  <ReorderButtons
+                    index={i}
+                    count={data.whyUsItems.length}
+                    onMove={(from, to) => update("whyUsItems", reorder(data.whyUsItems, from, to))}
+                    onRemove={(idx) => update("whyUsItems", data.whyUsItems.filter((_, j) => j !== idx))}
+                  />
+                </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Eyebrow" value={item.eyebrow} onChange={(v) => updateWhyUsItem(i, { eyebrow: v })} />
@@ -241,7 +271,18 @@ export function HomeContentForm({ initialData }: { initialData: HomeContent }) {
       </section>
 
       <section className="card-flat space-y-4">
-        <h2 className="display-sm text-foreground">Closing CTA</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="display-sm text-foreground">Closing CTA</h2>
+          <AiGenerateButton<{ heading: string; body: string; primaryCtaLabel: string }>
+            task="ctaCopy"
+            context={{ purpose: "close a homepage visit with a booked call or contact form submission", audience: "a prospective client evaluating the studio" }}
+            onResult={({ heading, body, primaryCtaLabel }) => {
+              update("ctaHeading", heading);
+              update("ctaBody", body);
+              update("ctaPrimaryLabel", primaryCtaLabel);
+            }}
+          />
+        </div>
         <Field label="Eyebrow" value={data.ctaEyebrow} onChange={(v) => update("ctaEyebrow", v)} />
         <Field label="Heading" value={data.ctaHeading} onChange={(v) => update("ctaHeading", v)} />
         <Field label="Body" value={data.ctaBody} onChange={(v) => update("ctaBody", v)} textarea />
@@ -264,12 +305,25 @@ export function HomeContentForm({ initialData }: { initialData: HomeContent }) {
             <div key={i} className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="mono-label text-muted-foreground">PARAGRAPH {i + 1}</p>
-                <ReorderButtons
-                  index={i}
-                  count={data.snapshotParagraphs.length}
-                  onMove={(from, to) => update("snapshotParagraphs", reorder(data.snapshotParagraphs, from, to))}
-                  onRemove={(idx) => update("snapshotParagraphs", data.snapshotParagraphs.filter((_, j) => j !== idx))}
-                />
+                <div className="flex items-center gap-2">
+                  <AiGenerateButton<string>
+                    task="shortCopy"
+                    variant="inline"
+                    context={{ purpose: data.snapshotHeading || "editorial paragraph about the studio", siteContext: p }}
+                    onResult={(text) =>
+                      update(
+                        "snapshotParagraphs",
+                        data.snapshotParagraphs.map((x, j) => (j === i ? text : x)),
+                      )
+                    }
+                  />
+                  <ReorderButtons
+                    index={i}
+                    count={data.snapshotParagraphs.length}
+                    onMove={(from, to) => update("snapshotParagraphs", reorder(data.snapshotParagraphs, from, to))}
+                    onRemove={(idx) => update("snapshotParagraphs", data.snapshotParagraphs.filter((_, j) => j !== idx))}
+                  />
+                </div>
               </div>
               <textarea
                 value={p}

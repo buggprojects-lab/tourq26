@@ -1134,3 +1134,27 @@ model HomePageContent {
   updatedAt DateTime @updatedAt
 }
 
+model BrandSettings {
+  id               String   @id @default(cuid()) @map("_id")
+  key              String   @unique @default("default")
+  logoUrl          String?
+  logoDarkUrl      String?
+  faviconUrl       String?
+  colorPrimary     String?
+  colorAccent      String?
+  fontHeading      String?
+  fontBody         String?
+  voiceDescription String?
+  voiceGuidelines  String?
+  updatedAt        DateTime @updatedAt
+}
+
+model ActivityLogEntry {
+  id         String   @id @default(cuid()) @map("_id")
+  entityType String
+  entityId   String?
+  action     String
+  summary    String
+  createdAt  DateTime @default(now())
+}
+

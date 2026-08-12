@@ -4,6 +4,7 @@ import type { PageType, WorkflowStatus } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { parseBlocks } from "@/lib/cms/blocks";
 import { createPage, listPages } from "@/lib/cms/pages";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET(request: NextRequest) {
   const ok = await requireAdmin();
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
       seo: body.seo as Parameters<typeof createPage>[0]["seo"],
       brief: body.brief as Parameters<typeof createPage>[0]["brief"],
     });
+    void logActivity({ entityType: "cms-page", entityId: page.id, action: "created", summary: `Created CMS page "${page.title}"` });
     revalidatePath("/admin/cms/pages");
     return NextResponse.json(page, { status: 201 });
   } catch (e) {

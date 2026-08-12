@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FooterContent } from "@/lib/footer-content";
+import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground";
@@ -76,11 +77,27 @@ export function FooterForm({ initialData }: { initialData: FooterContent }) {
       <section className="card-flat space-y-4">
         <h2 className="font-display text-base font-semibold text-foreground">Brand summary</h2>
         <div>
-          <label className="block text-sm font-medium text-foreground/90">Blurb</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="block text-sm font-medium text-foreground/90">Blurb</label>
+            <AiGenerateButton<string>
+              task="shortCopy"
+              variant="inline"
+              context={{ purpose: "footer brand blurb summarizing what the studio does", siteContext: data.blurb }}
+              onResult={(text) => update("blurb", text)}
+            />
+          </div>
           <textarea value={data.blurb} onChange={(e) => update("blurb", e.target.value)} rows={3} className={inputClass} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground/90">Tagline (bottom-right line)</label>
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="block text-sm font-medium text-foreground/90">Tagline (bottom-right line)</label>
+            <AiGenerateButton<string>
+              task="shortCopy"
+              variant="inline"
+              context={{ purpose: "one-line footer tagline for a software studio", siteContext: data.tagline }}
+              onResult={(text) => update("tagline", text)}
+            />
+          </div>
           <input type="text" value={data.tagline} onChange={(e) => update("tagline", e.target.value)} className={inputClass} />
         </div>
       </section>

@@ -25,7 +25,10 @@ export function AdminSidebar({
     {
       id: "overview",
       label: "OVERVIEW",
-      items: [{ href: "/admin/dashboard", label: "Dashboard" }],
+      items: [
+        { href: "/admin/dashboard", label: "Dashboard" },
+        { href: "/admin/activity", label: "Activity" },
+      ],
     },
     {
       id: "cms",
@@ -33,6 +36,7 @@ export function AdminSidebar({
       items: [
         { href: "/admin/cms/pages", label: "Pages" },
         { href: "/admin/cms/entities", label: "Entities" },
+        { href: "/admin/media", label: "Media" },
       ],
     },
     {
@@ -56,7 +60,9 @@ export function AdminSidebar({
         { href: "/admin/home", label: "Homepage" },
         { href: "/admin/navigation", label: "Navigation" },
         { href: "/admin/footer", label: "Footer" },
+        { href: "/admin/brand", label: "Brand" },
         { href: "/admin/site", label: "Site & SEO" },
+        { href: "/admin/redirects", label: "Redirects" },
         { href: "/admin/feature-flags", label: "Feature flags" },
       ],
     },

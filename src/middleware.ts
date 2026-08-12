@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getResolvedFeatureFlags } from "@/lib/feature-flags";
+import { findActiveRedirect } from "@/lib/redirects";
 
 function isAdminOrPublicAuthPath(pathname: string): boolean {
   if (pathname.startsWith("/admin")) return true;
@@ -24,6 +25,15 @@ export async function middleware(request: NextRequest) {
   // If these paths hit middleware, responses can break (wrong MIME, 500) and the app shell fails to load.
   if (pathname.startsWith("/_next")) {
     return NextResponse.next();
+  }
+
+  if (!isAdminOrPublicAuthPath(pathname)) {
+    const redirectRule = await findActiveRedirect(pathname);
+    if (redirectRule) {
+      const url = request.nextUrl.clone();
+      const target = new URL(redirectRule.toPath, url.origin);
+      return NextResponse.redirect(target, redirectRule.permanent ? 301 : 302);
+    }
   }
 
   const flags = await getResolvedFeatureFlags().catch(() => null);

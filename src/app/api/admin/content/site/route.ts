@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readSiteContent, writeSiteContent, type SiteContent } from "@/lib/content";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -31,6 +32,7 @@ export async function PUT(request: NextRequest) {
       typeof body.twitterDescription === "string" ? body.twitterDescription : current.twitterDescription,
   };
   await writeSiteContent(data);
+  void logActivity({ entityType: "site", action: "updated", summary: "Updated site & SEO settings" });
   revalidatePath("/");
   revalidatePath("/blog");
   return NextResponse.json(data);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { readTestimonials, writeTestimonials, type Testimonial } from "@/lib/content";
+import { logActivity } from "@/lib/activity-log";
 
 export async function GET() {
   const ok = await requireAdmin();
@@ -25,6 +26,7 @@ export async function PUT(request: NextRequest) {
     rating: typeof t.rating === "number" ? t.rating : 5,
   }));
   await writeTestimonials(testimonials);
+  void logActivity({ entityType: "testimonials", action: "updated", summary: `Updated testimonials (${testimonials.length} total)` });
   revalidatePath("/");
   return NextResponse.json(testimonials);
 }
