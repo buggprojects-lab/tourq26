@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useExternalDevToolsHubHref } from "@/hooks/useExternalDevToolsHubHref";
 import type { NavLink } from "@/lib/nav-content";
 
@@ -42,6 +43,7 @@ export default function Header({
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
   const devToolsExternalHref = useExternalDevToolsHubHref();
   const resolvedLinks = useMemo(
     () => buildNavLinks(navLinks, navFlags, devToolsExternalHref),
@@ -83,16 +85,27 @@ export default function Header({
           {resolvedLinks.map((link) => {
             const isDevTools = link.href === "/dev-tools";
             const href = isDevTools ? devToolsExternalHref! : link.href;
+            const isActive = !isDevTools && pathname === link.href;
             return (
               <Link
                 key={isDevTools ? "dev-tools" : link.href}
                 href={href}
-                className="text-[14px] font-medium tracking-tight text-inherit/85 opacity-85 transition-opacity hover:opacity-100"
+                aria-current={isActive ? "page" : undefined}
+                className={`group relative py-1 text-[14px] font-medium tracking-tight text-inherit transition-opacity duration-200 ${
+                  isActive ? "opacity-100" : "opacity-85 hover:opacity-100"
+                }`}
                 {...(isDevTools || link.openInNewTab
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
               >
                 {link.label}
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-x-0 -bottom-1 h-[1.5px] origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 ${
+                    isActive ? "scale-x-100" : ""
+                  }`}
+                  style={{ backgroundImage: "var(--brand-gradient)" }}
+                />
               </Link>
             );
           })}
@@ -139,12 +152,16 @@ export default function Header({
               {resolvedLinks.map((link) => {
                 const isDevTools = link.href === "/dev-tools";
                 const href = isDevTools ? devToolsExternalHref! : link.href;
+                const isActive = !isDevTools && pathname === link.href;
                 return (
                   <Link
                     key={isDevTools ? "dev-tools" : link.href}
                     href={href}
                     onClick={() => setOpen(false)}
-                    className="rounded-[var(--radius-sm)] px-3 py-3 text-[15px] font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
+                    aria-current={isActive ? "page" : undefined}
+                    className={`rounded-[var(--radius-sm)] px-3 py-3 text-[15px] font-medium transition-colors duration-150 hover:bg-white/5 hover:text-white ${
+                      isActive ? "bg-white/5 text-white" : "text-white/80"
+                    }`}
                     {...(isDevTools || link.openInNewTab
                       ? { target: "_blank", rel: "noopener noreferrer" }
                       : {})}

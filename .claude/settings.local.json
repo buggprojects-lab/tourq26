@@ -17,7 +17,20 @@
       "Bash(ollama show *)",
       "Bash(curl -s http://localhost:11434/api/version)",
       "Bash(curl -s http://localhost:11434/v1/models)",
-      "Bash(ollama pull *)"
+      "Bash(ollama pull *)",
+      "Bash(chromium-cli --help)",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")",
+      "Bash(npx --yes playwright --version)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(echo \"installing in bg pid $!\")",
+      "Bash([ -d \"$SCRATCH/node_modules/playwright\" ])",
+      "Bash(break)",
+      "Read(//private/tmp/claude-501/**)",
+      "Read(//Users/torq/Library/Caches/ms-playwright/**)",
+      "Read(//Users/torq/**)",
+      "Bash(lsof -ti:3000 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)"
     ]
   }
 }
