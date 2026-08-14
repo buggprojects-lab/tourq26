@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import { PDFParse } from "pdf-parse";
 // Relative import (not "@/...") — this file is also imported by scripts/rag/build-knowledge-base.ts,
 // which runs under tsx and doesn't resolve the tsconfig "@/*" path alias.
 import { prisma } from "../prisma";
@@ -26,6 +25,11 @@ export async function extractTextFromUpload(file: File): Promise<string> {
   }
 
   if (ext === ".pdf") {
+    // Dynamic import: pdf-parse (and its pdfjs-dist/@napi-rs/canvas transitive deps) must stay
+    // out of this module's top-level import graph. This file is imported by page.tsx/route.ts
+    // for every load of /admin/knowledge-base, not just PDF uploads — a resolution failure for
+    // pdf-parse's native/worker sub-dependencies in serverless must not crash the whole page.
+    const { PDFParse } = await import("pdf-parse");
     const buffer = Buffer.from(await file.arrayBuffer());
     const parser = new PDFParse({ data: buffer });
     try {
