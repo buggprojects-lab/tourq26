@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function AdminLoginPage() {
           disabled={loading}
           className="btn-base btn-primary mt-5 w-full"
         >
+          {loading ? <Spinner className="h-4 w-4" /> : null}
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>

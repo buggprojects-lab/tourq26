@@ -100,7 +100,10 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(node -e \"const {chromium} = require\\('playwright'\\); console.log\\(chromium.executablePath\\(\\)\\)\")",
       "Bash(node check.js)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN -P)",
+      "Bash(lsof -i :3001 -sTCP:LISTEN -P)",
+      "Bash(kill 8123 8124)"
     ]
   }
 }

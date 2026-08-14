@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { MediaAssetDto } from "@/lib/media";
+import { Spinner } from "@/components/Spinner";
 
 function formatBytes(n: number | null): string {
   if (!n) return "";
@@ -67,6 +68,7 @@ export function MediaLibraryClient({ initialAssets }: { initialAssets: MediaAsse
           onClick={() => fileInputRef.current?.click()}
           className="btn-base btn-primary"
         >
+          {uploading ? <Spinner className="h-4 w-4" /> : null}
           {uploading ? "Uploading…" : "Upload file"}
         </button>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

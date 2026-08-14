@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { useAiGenerate } from "@/lib/ai/useAiGenerate";
 import { TASK_LABELS, TASK_FIELDS, type TaskName } from "@/lib/ai/tasks";
+import { Spinner } from "@/components/Spinner";
 
 type Variant = "secondary" | "inline" | "outline";
 
@@ -108,6 +109,7 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
                 disabled={previewLoading || loading || !brief.trim()}
                 className="btn-base btn-primary"
               >
+                {loading ? <Spinner className="h-4 w-4" /> : null}
                 {loading ? "Generating…" : "Generate"}
               </button>
             </div>

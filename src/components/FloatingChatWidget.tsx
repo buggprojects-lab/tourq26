@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { Spinner } from "@/components/Spinner";
 
 type ChatMessage = { role: "user" | "assistant"; content: string; isGreeting?: boolean };
 
@@ -360,9 +361,13 @@ export default function FloatingChatWidget() {
               aria-label="Send message"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-[var(--app-primary)] text-[var(--app-primary-fg)] transition-colors hover:bg-[var(--app-primary-hover)] disabled:opacity-50"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 21 3l-5.5 18-4.5-7.5L3 9z" />
-              </svg>
+              {sending ? (
+                <Spinner className="h-4 w-4" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 21 3l-5.5 18-4.5-7.5L3 9z" />
+                </svg>
+              )}
             </button>
           </form>
         </div>
