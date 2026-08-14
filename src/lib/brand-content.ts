@@ -1,6 +1,4 @@
-import { prisma, withDbTimeout } from "@/lib/db";
-
-const SETTINGS_KEY = "default";
+import { prisma, readSingletonSetting, writeSingletonSetting, SINGLETON_KEY } from "@/lib/db";
 
 /** Curated fonts — kept small so runtime `<link>` injection never needs an arbitrary Google Fonts URL. */
 export const BRAND_FONTS = [
@@ -45,25 +43,21 @@ function getDefaultBrandContent(): BrandContent {
 }
 
 export async function readBrandContent(): Promise<BrandContent> {
-  const d = getDefaultBrandContent();
-  let row;
-  try {
-    row = await withDbTimeout(prisma.brandSettings.findUnique({ where: { key: SETTINGS_KEY } }));
-  } catch {
-    return d;
-  }
-  if (!row) return d;
-  return {
-    logoUrl: row.logoUrl || d.logoUrl,
-    logoDarkUrl: row.logoDarkUrl || d.logoDarkUrl,
-    faviconUrl: row.faviconUrl || d.faviconUrl,
-    colorPrimary: row.colorPrimary || d.colorPrimary,
-    colorAccent: row.colorAccent || d.colorAccent,
-    fontHeading: row.fontHeading || d.fontHeading,
-    fontBody: row.fontBody || d.fontBody,
-    voiceDescription: row.voiceDescription || d.voiceDescription,
-    voiceGuidelines: row.voiceGuidelines || d.voiceGuidelines,
-  };
+  return readSingletonSetting(
+    () => prisma.brandSettings.findUnique({ where: { key: SINGLETON_KEY } }),
+    getDefaultBrandContent,
+    (row, d) => ({
+      logoUrl: row.logoUrl || d.logoUrl,
+      logoDarkUrl: row.logoDarkUrl || d.logoDarkUrl,
+      faviconUrl: row.faviconUrl || d.faviconUrl,
+      colorPrimary: row.colorPrimary || d.colorPrimary,
+      colorAccent: row.colorAccent || d.colorAccent,
+      fontHeading: row.fontHeading || d.fontHeading,
+      fontBody: row.fontBody || d.fontBody,
+      voiceDescription: row.voiceDescription || d.voiceDescription,
+      voiceGuidelines: row.voiceGuidelines || d.voiceGuidelines,
+    }),
+  );
 }
 
 export async function writeBrandContent(data: BrandContent): Promise<void> {
@@ -78,9 +72,5 @@ export async function writeBrandContent(data: BrandContent): Promise<void> {
     voiceDescription: data.voiceDescription.trim(),
     voiceGuidelines: data.voiceGuidelines.trim(),
   };
-  await prisma.brandSettings.upsert({
-    where: { key: SETTINGS_KEY },
-    create: { key: SETTINGS_KEY, ...payload },
-    update: payload,
-  });
+  await writeSingletonSetting((args) => prisma.brandSettings.upsert(args), payload);
 }

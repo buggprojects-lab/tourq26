@@ -3,14 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { CaseStudy } from "@/lib/case-studies-content";
-import { CaseStudyListActions } from "./CaseStudyListActions";
-
-function formatDate(s?: string) {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
-}
+import { EntityListActions } from "@/components/admin/EntityListActions";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { formatShortDate } from "@/lib/date-format";
 
 export function CaseStudyListClient({ items }: { items: CaseStudy[] }) {
   const [query, setQuery] = useState("");
@@ -31,22 +26,12 @@ export function CaseStudyListClient({ items }: { items: CaseStudy[] }) {
     <div className="mt-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="mono-label text-muted-foreground">{items.length} TOTAL</p>
-        <div className="relative sm:w-72">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          >
-            ⌕
-          </span>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search title, slug, client, or industry…"
-            className="text-input pl-8"
-            aria-label="Search case studies"
-          />
-        </div>
+        <AdminSearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Search title, slug, client, or industry…"
+          label="Search case studies"
+        />
       </div>
 
       {filtered.length === 0 ? (
@@ -89,10 +74,14 @@ export function CaseStudyListClient({ items }: { items: CaseStudy[] }) {
                     {c.industry}
                   </td>
                   <td className="hidden whitespace-nowrap px-4 py-3 text-[13px] text-muted-foreground sm:table-cell">
-                    {formatDate(c.date)}
+                    {formatShortDate(c.date)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <CaseStudyListActions slug={c.slug} />
+                    <EntityListActions
+                      editHref={`/admin/case-studies/${encodeURIComponent(c.slug)}/edit`}
+                      deleteUrl={`/api/admin/content/case-studies/${encodeURIComponent(c.slug)}`}
+                      confirmMessage="Delete this case study? This cannot be undone."
+                    />
                   </td>
                 </tr>
               ))}

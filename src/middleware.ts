@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getResolvedFeatureFlags } from "@/lib/feature-flags";
 import { findActiveRedirect } from "@/lib/redirects";
+import { isEnvFlagOn } from "@/lib/env";
 
 function isAdminOrPublicAuthPath(pathname: string): boolean {
   if (pathname.startsWith("/admin")) return true;
@@ -13,8 +14,7 @@ function isAdminOrPublicAuthPath(pathname: string): boolean {
 }
 
 function envMaintenanceOn(): boolean {
-  const v = process.env.MAINTENANCE_MODE?.trim().toLowerCase();
-  return v === "true" || v === "1" || v === "yes" || v === "on";
+  return isEnvFlagOn(process.env.MAINTENANCE_MODE, false);
 }
 
 export async function middleware(request: NextRequest) {
@@ -27,6 +27,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Content-team-managed redirects (DB-backed, editable at /admin/redirects). Static infra-level
+  // rules (host canonicalization, deploy-time path renames) live in next.config.ts's redirects()
+  // instead — add those there, not here.
   if (!isAdminOrPublicAuthPath(pathname)) {
     const redirectRule = await findActiveRedirect(pathname);
     if (redirectRule) {

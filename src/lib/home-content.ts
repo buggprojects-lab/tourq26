@@ -1,4 +1,4 @@
-import { prisma, withDbTimeout } from "@/lib/db";
+import { prisma, readSingletonSetting, writeSingletonSetting, SINGLETON_KEY } from "@/lib/db";
 
 export type ServiceItem = {
   slug: string;
@@ -55,8 +55,6 @@ export type HomeContent = {
   snapshotHeading: string;
   snapshotParagraphs: string[];
 };
-
-const SETTINGS_KEY = "default";
 
 function getDefaultHomeContent(): HomeContent {
   return {
@@ -204,15 +202,10 @@ function isWhyUsItemArray(v: unknown): v is WhyUsItem[] {
 }
 
 export async function readHomeContent(): Promise<HomeContent> {
-  const d = getDefaultHomeContent();
-  let row;
-  try {
-    row = await withDbTimeout(prisma.homePageContent.findUnique({ where: { key: SETTINGS_KEY } }));
-  } catch {
-    return d;
-  }
-  if (!row) return d;
-  return {
+  return readSingletonSetting(
+    () => prisma.homePageContent.findUnique({ where: { key: SINGLETON_KEY } }),
+    getDefaultHomeContent,
+    (row, d) => ({
     heroEyebrow: row.heroEyebrow || d.heroEyebrow,
     heroHeading: row.heroHeading || d.heroHeading,
     heroSubheading: row.heroSubheading || d.heroSubheading,
@@ -250,7 +243,8 @@ export async function readHomeContent(): Promise<HomeContent> {
 
     snapshotHeading: row.snapshotHeading || d.snapshotHeading,
     snapshotParagraphs: row.snapshotParagraphs.length ? row.snapshotParagraphs : d.snapshotParagraphs,
-  };
+    }),
+  );
 }
 
 export async function writeHomeContent(data: HomeContent): Promise<void> {
@@ -293,9 +287,5 @@ export async function writeHomeContent(data: HomeContent): Promise<void> {
     snapshotHeading: data.snapshotHeading,
     snapshotParagraphs: data.snapshotParagraphs,
   };
-  await prisma.homePageContent.upsert({
-    where: { key: SETTINGS_KEY },
-    create: { key: SETTINGS_KEY, ...payload },
-    update: payload,
-  });
+  await writeSingletonSetting((args) => prisma.homePageContent.upsert(args), payload);
 }

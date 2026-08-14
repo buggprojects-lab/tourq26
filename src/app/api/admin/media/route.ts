@@ -1,31 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import { listMediaAssets, saveMediaFile } from "@/lib/media";
 import { logActivity } from "@/lib/activity-log";
+import { jsonError } from "@/lib/api-response";
+import { MAX_UPLOAD_SIZE_BYTES } from "@/lib/constants";
 
-const MAX_SIZE_BYTES = 15 * 1024 * 1024;
-
-export async function GET() {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAdmin(async () => {
   const assets = await listMediaAssets();
   return NextResponse.json(assets);
-}
+});
 
-export async function POST(request: NextRequest) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withAdmin(async (request: NextRequest) => {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   if (!file || !(file instanceof File)) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    return jsonError(400, "No file provided");
   }
-  if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "File too large (max 15MB)" }, { status: 400 });
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    return jsonError(400, "File too large (max 15MB)");
   }
 
   const asset = await saveMediaFile(file);
   void logActivity({ entityType: "media", entityId: asset.id, action: "created", summary: `Uploaded "${asset.filename}"` });
   return NextResponse.json(asset);
-}
+});

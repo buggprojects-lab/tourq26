@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { SiteContent } from "@/lib/content";
 import { SerpPreview } from "@/components/admin/SerpPreview";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { ADMIN_INPUT_CLASS } from "@/components/admin/form-styles";
 
 function CharHint({ value, softMax, label }: { value: string; softMax: number; label: string }) {
   const n = value.length;
@@ -70,7 +71,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             type="url"
             value={data.siteUrl}
             onChange={(e) => update("siteUrl", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -82,7 +83,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             type="text"
             value={data.siteName}
             onChange={(e) => update("siteName", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
       </section>
@@ -113,7 +114,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             type="text"
             value={data.defaultTitle}
             onChange={(e) => update("defaultTitle", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -125,7 +126,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             value={data.defaultDescription}
             onChange={(e) => update("defaultDescription", e.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -169,7 +170,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             type="text"
             value={data.ogTitle}
             onChange={(e) => update("ogTitle", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -181,7 +182,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             value={data.ogDescription}
             onChange={(e) => update("ogDescription", e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
       </section>
@@ -211,7 +212,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             type="text"
             value={data.twitterTitle ?? ""}
             onChange={(e) => update("twitterTitle", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -223,7 +224,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             value={data.twitterDescription ?? ""}
             onChange={(e) => update("twitterDescription", e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -235,7 +236,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             value={data.twitterSite ?? ""}
             onChange={(e) => update("twitterSite", e.target.value.replace(/^@/, ""))}
             placeholder="yourbrand"
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground placeholder:text-muted-foreground"
+            className={`${ADMIN_INPUT_CLASS} placeholder:text-muted-foreground`}
           />
         </div>
       </section>
@@ -271,7 +272,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
               )
             }
             rows={4}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground"
+            className={ADMIN_INPUT_CLASS}
           />
         </div>
         <div>
@@ -292,7 +293,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             }
             rows={4}
             placeholder={"https://www.linkedin.com/company/…\nhttps://x.com/…"}
-            className="mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground placeholder:text-muted-foreground"
+            className={`${ADMIN_INPUT_CLASS} placeholder:text-muted-foreground`}
           />
         </div>
       </section>

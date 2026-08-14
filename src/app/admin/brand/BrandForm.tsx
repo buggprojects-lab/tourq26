@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import type { BrandContent } from "@/lib/brand-content";
 import { BRAND_FONTS } from "@/lib/brand-content";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
-
-const inputClass =
-  "mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground";
+import { ADMIN_INPUT_CLASS as inputClass } from "@/components/admin/form-styles";
 
 function Field({
   label,

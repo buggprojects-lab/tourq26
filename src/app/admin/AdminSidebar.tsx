@@ -46,6 +46,7 @@ export function AdminSidebar({
         { href: "/admin/blog", label: "Blog", badge: blogCount },
         { href: "/admin/case-studies", label: "Case studies", badge: caseStudyCount },
         { href: "/admin/testimonials", label: "Testimonials" },
+        { href: "/admin/knowledge-base", label: "Chat knowledge" },
       ],
     },
     {

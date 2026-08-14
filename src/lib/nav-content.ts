@@ -8,7 +8,8 @@ export type NavLink = {
 
 const NAV_KEY = "primary";
 
-/** Matches today's hardcoded `baseNavLinks` in `Header.tsx`, minus the flag-gated Dev tools link. */
+/** Fallback used when the DB is empty/unavailable — `Header.tsx` renders whatever `readPrimaryNav()`
+ *  returns, it has no separate hardcoded copy of its own. */
 function getDefaultNavLinks(): NavLink[] {
   return [
     { label: "About", href: "/about", openInNewTab: false },

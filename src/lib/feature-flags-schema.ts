@@ -4,6 +4,7 @@ export const FEATURE_FLAG_KEYS = [
   "marketing_blog",
   "nav_tools",
   "floating_whatsapp",
+  "floating_chat_assistant",
   "dev_tools_code_playground",
 ] as const;
 
@@ -62,10 +63,19 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     envOverride: "FF_FLOATING_WHATSAPP",
   },
   {
+    key: "floating_chat_assistant",
+    label: "Floating AI chat assistant",
+    description:
+      "Global floating chat widget answering visitor questions from site content (RAG over services, FAQs, blog, case studies). Requires GEMINI_API_KEY.",
+    category: "Marketing",
+    defaultEnabled: false,
+    envOverride: "FF_FLOATING_CHAT_ASSISTANT",
+  },
+  {
     key: "dev_tools_code_playground",
     label: "API: Playground runs on /api/run",
     description:
-      "When off, POST /api/run with source=playground returns 403 (legacy clients). Interview hub runs without source=playground are unchanged. The public playground lives on the standalone Torq DevTools deployment.",
+      "When off, POST /api/run with source=playground returns 403 (legacy clients). Non-playground runs are unchanged. The public playground lives on the standalone Torq DevTools deployment.",
     category: "Site",
     defaultEnabled: true,
     envOverride: "FF_DEV_TOOLS_CODE_PLAYGROUND",

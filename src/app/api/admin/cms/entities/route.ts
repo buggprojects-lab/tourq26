@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { EntityKind } from "@prisma/client";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import {
   ensureEntityPage,
   listEntities,
@@ -8,10 +8,7 @@ import {
 } from "@/lib/cms/entities";
 import { logActivity } from "@/lib/activity-log";
 
-export async function GET(request: NextRequest) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const GET = withAdmin(async (request: NextRequest) => {
   const kind = new URL(request.url).searchParams.get("kind") as EntityKind | null;
   if (!kind) {
     const [services, solutions, industries, technologies] = await Promise.all([
@@ -25,12 +22,9 @@ export async function GET(request: NextRequest) {
 
   const rows = await listEntities(kind);
   return NextResponse.json(rows);
-}
+});
 
-export async function POST(request: NextRequest) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withAdmin(async (request: NextRequest) => {
   const body = (await request.json()) as {
     action?: string;
     kind?: EntityKind;
@@ -57,4 +51,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
-}
+});

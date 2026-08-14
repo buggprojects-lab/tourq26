@@ -1,4 +1,11 @@
-import { prisma, withDbTimeout } from "@/lib/db";
+import { cache } from "react";
+import { prisma, withDbTimeout, writeSingletonSetting, SINGLETON_KEY } from "@/lib/db";
+
+/** Deduped per-request: readSiteContent() and readFeatureFlagsDocument() both read this same
+ *  row — React's cache() collapses repeat calls within one render into a single DB query. */
+const getSiteSettingsRow = cache(() =>
+  withDbTimeout(prisma.siteSettings.findUnique({ where: { key: SINGLETON_KEY } })),
+);
 
 export type BlogStatus = "draft" | "published";
 
@@ -77,8 +84,6 @@ export type FeatureFlagsDocument = {
   values: Record<string, boolean>;
   updatedAt: string;
 };
-
-const SETTINGS_KEY = "default";
 
 function toBlogPost(row: {
   slug: string;
@@ -241,7 +246,7 @@ export async function readSiteContent(): Promise<SiteContent> {
   const d = getDefaultSiteContent();
   let row;
   try {
-    row = await withDbTimeout(prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }));
+    row = await getSiteSettingsRow();
   } catch {
     return d;
   }
@@ -263,40 +268,21 @@ export async function readSiteContent(): Promise<SiteContent> {
 }
 
 export async function writeSiteContent(data: SiteContent): Promise<void> {
-  const sameAs = data.sameAs.map((u) => u.trim()).filter(Boolean);
-  const twitterSite = data.twitterSite.replace(/^@/, "").trim();
-  await prisma.siteSettings.upsert({
-    where: { key: SETTINGS_KEY },
-    create: {
-      key: SETTINGS_KEY,
-      siteUrl: data.siteUrl,
-      defaultTitle: data.defaultTitle,
-      defaultDescription: data.defaultDescription,
-      titleTemplate: data.titleTemplate,
-      keywords: data.keywords,
-      ogTitle: data.ogTitle,
-      ogDescription: data.ogDescription,
-      twitterTitle: data.twitterTitle,
-      twitterDescription: data.twitterDescription,
-      siteName: data.siteName,
-      socialProfiles: sameAs,
-      twitterHandle: twitterSite,
-    },
-    update: {
-      siteUrl: data.siteUrl,
-      defaultTitle: data.defaultTitle,
-      defaultDescription: data.defaultDescription,
-      titleTemplate: data.titleTemplate,
-      keywords: data.keywords,
-      ogTitle: data.ogTitle,
-      ogDescription: data.ogDescription,
-      twitterTitle: data.twitterTitle,
-      twitterDescription: data.twitterDescription,
-      siteName: data.siteName,
-      socialProfiles: sameAs,
-      twitterHandle: twitterSite,
-    },
-  });
+  const payload = {
+    siteUrl: data.siteUrl,
+    defaultTitle: data.defaultTitle,
+    defaultDescription: data.defaultDescription,
+    titleTemplate: data.titleTemplate,
+    keywords: data.keywords,
+    ogTitle: data.ogTitle,
+    ogDescription: data.ogDescription,
+    twitterTitle: data.twitterTitle,
+    twitterDescription: data.twitterDescription,
+    siteName: data.siteName,
+    socialProfiles: data.sameAs.map((u) => u.trim()).filter(Boolean),
+    twitterHandle: data.twitterSite.replace(/^@/, "").trim(),
+  };
+  await writeSingletonSetting((args) => prisma.siteSettings.upsert(args), payload);
 }
 
 // --- Contact form submissions (append-only, admin view only) ---
@@ -348,21 +334,14 @@ export async function addContactSubmission(input: {
 export async function readFeatureFlagsDocument(): Promise<FeatureFlagsDocument | null> {
   let row;
   try {
-    row = await withDbTimeout(prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }));
+    row = await getSiteSettingsRow();
   } catch {
     return null;
   }
   const data = row?.featureFlags;
-  if (data && typeof data === "object" && "values" in data) {
-    return data as FeatureFlagsDocument;
-  }
-  return null;
+  return data && typeof data === "object" && "values" in data ? (data as FeatureFlagsDocument) : null;
 }
 
 export async function writeFeatureFlagsDocument(doc: FeatureFlagsDocument): Promise<void> {
-  await prisma.siteSettings.upsert({
-    where: { key: SETTINGS_KEY },
-    create: { key: SETTINGS_KEY, featureFlags: doc },
-    update: { featureFlags: doc },
-  });
+  await writeSingletonSetting((args) => prisma.siteSettings.upsert(args), { featureFlags: doc });
 }

@@ -1,29 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import { readCaseStudies, writeCaseStudies, type CaseStudy } from "@/lib/case-studies-content";
 import { slugify } from "@/lib/blog-server";
 import { logActivity } from "@/lib/activity-log";
 
-export async function GET(
+export const GET = withAdmin(async (
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
-) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
   const { slug } = await params;
   const items = await readCaseStudies();
   const item = items.find((c) => c.slug === slug);
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(item);
-}
+});
 
-export async function PUT(
+export const PUT = withAdmin(async (
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
-) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
   const { slug } = await params;
 
   const items = await readCaseStudies();
@@ -66,14 +62,12 @@ export async function PUT(
   revalidatePath(`/case-studies/${updated.slug}`);
   if (updated.slug !== slug) revalidatePath(`/case-studies/${slug}`);
   return NextResponse.json(updated);
-}
+});
 
-export async function DELETE(
+export const DELETE = withAdmin(async (
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
-) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
   const { slug } = await params;
   const items = await readCaseStudies();
   const filtered = items.filter((c) => c.slug !== slug);
@@ -84,4 +78,4 @@ export async function DELETE(
   revalidatePath("/case-studies");
   revalidatePath(`/case-studies/${slug}`);
   return NextResponse.json({ ok: true });
-}
+});

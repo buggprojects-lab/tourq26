@@ -2,32 +2,27 @@
 
 import { useState } from "react";
 import type { RedirectDto } from "@/lib/redirects";
-
-const inputClass =
-  "mt-1 w-full rounded-lg border border-border bg-surface/50 px-4 py-2 text-foreground";
+import { ADMIN_INPUT_CLASS as inputClass } from "@/components/admin/form-styles";
+import { useAdminMutation } from "@/hooks/useAdminMutation";
 
 export function RedirectsClient({ initialRedirects }: { initialRedirects: RedirectDto[] }) {
   const [redirects, setRedirects] = useState<RedirectDto[]>(initialRedirects);
   const [fromPath, setFromPath] = useState("");
   const [toPath, setToPath] = useState("");
   const [type, setType] = useState<RedirectDto["type"]>("PERMANENT_301");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { saving, error, run } = useAdminMutation();
 
   const add = async () => {
-    setError("");
-    setSaving(true);
-    const res = await fetch("/api/admin/redirects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromPath, toPath, type }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error || "Failed to add redirect");
-      return;
-    }
+    const data = await run<RedirectDto>(
+      () =>
+        fetch("/api/admin/redirects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fromPath, toPath, type }),
+        }),
+      "Failed to add redirect",
+    );
+    if (!data) return;
     setRedirects((prev) => [data, ...prev]);
     setFromPath("");
     setToPath("");

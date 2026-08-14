@@ -1,4 +1,4 @@
-import { prisma, withDbTimeout } from "@/lib/db";
+import { prisma, readSingletonSetting, writeSingletonSetting, SINGLETON_KEY } from "@/lib/db";
 
 export type FooterColumn = {
   eyebrow: string;
@@ -11,9 +11,8 @@ export type FooterContent = {
   columns: FooterColumn[];
 };
 
-const FOOTER_KEY = "default";
-
-/** Matches today's hardcoded `navColumns` + copy in `Footer.tsx`. */
+/** Fallback used when the DB is empty/unavailable — `Footer.tsx` renders whatever
+ *  `readFooterContent()` returns, it has no separate hardcoded copy of its own. */
 function getDefaultFooterContent(): FooterContent {
   return {
     blurb:
@@ -76,34 +75,21 @@ function isFooterColumnArray(v: unknown): v is FooterColumn[] {
 }
 
 export async function readFooterContent(): Promise<FooterContent> {
-  const d = getDefaultFooterContent();
-  let row;
-  try {
-    row = await withDbTimeout(prisma.footer.findUnique({ where: { key: FOOTER_KEY } }));
-  } catch {
-    return d;
-  }
-  if (!row) return d;
-  return {
-    blurb: row.blurb || d.blurb,
-    tagline: row.tagline || d.tagline,
-    columns: isFooterColumnArray(row.columns) ? row.columns : d.columns,
-  };
+  return readSingletonSetting(
+    () => prisma.footer.findUnique({ where: { key: SINGLETON_KEY } }),
+    getDefaultFooterContent,
+    (row, d) => ({
+      blurb: row.blurb || d.blurb,
+      tagline: row.tagline || d.tagline,
+      columns: isFooterColumnArray(row.columns) ? row.columns : d.columns,
+    }),
+  );
 }
 
 export async function writeFooterContent(data: FooterContent): Promise<void> {
-  await prisma.footer.upsert({
-    where: { key: FOOTER_KEY },
-    create: {
-      key: FOOTER_KEY,
-      blurb: data.blurb,
-      tagline: data.tagline,
-      columns: data.columns,
-    },
-    update: {
-      blurb: data.blurb,
-      tagline: data.tagline,
-      columns: data.columns,
-    },
+  await writeSingletonSetting((args) => prisma.footer.upsert(args), {
+    blurb: data.blurb,
+    tagline: data.tagline,
+    columns: data.columns,
   });
 }

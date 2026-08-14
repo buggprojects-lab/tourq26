@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import type { WorkflowStatus } from "@prisma/client";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import { parseBlocks } from "@/lib/cms/blocks";
 import {
   getPageById,
@@ -14,18 +14,14 @@ import { logActivity } from "@/lib/activity-log";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, ctx: Ctx) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAdmin(async (_request: NextRequest, ctx: Ctx) => {
   const { id } = await ctx.params;
   const page = await getPageById(id);
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(page);
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PATCH = withAdmin(async (request: NextRequest, ctx: Ctx) => {
   const { id } = await ctx.params;
   const body = (await request.json()) as Record<string, unknown>;
 
@@ -84,11 +80,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const message = e instanceof Error ? e.message : "Failed to update page";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+});
 
-export async function DELETE(_request: NextRequest, ctx: Ctx) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withAdmin(async (_request: NextRequest, ctx: Ctx) => {
   const { id } = await ctx.params;
   const { prisma } = await import("@/lib/db");
   const page = await getPageById(id);
@@ -99,4 +93,4 @@ export async function DELETE(_request: NextRequest, ctx: Ctx) {
   revalidatePath("/admin/cms/pages");
   if (page.path) revalidatePath(page.path);
   return NextResponse.json({ ok: true });
-}
+});

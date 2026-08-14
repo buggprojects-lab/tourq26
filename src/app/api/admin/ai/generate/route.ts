@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import { generateFieldContent, generateFieldObject, AiUnavailableError, AiGenerationError } from "@/lib/ai/ollama";
 import { TASKS, buildFullPrompt, type TaskName } from "@/lib/ai/tasks";
 import { readBrandContent } from "@/lib/brand-content";
 
-export async function POST(request: NextRequest) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withAdmin(async (request: NextRequest) => {
   const body = (await request.json().catch(() => null)) as {
     task?: string;
     context?: Record<string, unknown>;
@@ -61,4 +58,4 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: "Generation failed." }, { status: 500 });
   }
-}
+});

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { readSiteContent } from "@/lib/content";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import FloatingChatWidget from "@/components/FloatingChatWidget";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { readBrandContent, findBrandFont } from "@/lib/brand-content";
 
@@ -84,9 +85,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [site, showWhatsApp, brand] = await Promise.all([
+  const [site, showWhatsApp, showChatAssistant, brand] = await Promise.all([
     readSiteContent(),
     isFeatureEnabled("floating_whatsapp"),
+    isFeatureEnabled("floating_chat_assistant"),
     readBrandContent(),
   ]);
   const siteUrl = site.siteUrl.replace(/\/$/, "");
@@ -151,6 +153,7 @@ export default async function RootLayout({
         />
         {children}
         {showWhatsApp ? <FloatingWhatsApp /> : null}
+        {showChatAssistant ? <FloatingChatWidget /> : null}
       </body>
     </html>
   );

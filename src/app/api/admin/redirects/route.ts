@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { withAdmin } from "@/lib/with-admin";
 import { listRedirects, createRedirect } from "@/lib/redirects";
 import { logActivity } from "@/lib/activity-log";
 
-export async function GET() {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAdmin(async () => {
   const redirects = await listRedirects();
   return NextResponse.json(redirects);
-}
+});
 
-export async function POST(request: NextRequest) {
-  const ok = await requireAdmin();
-  if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withAdmin(async (request: NextRequest) => {
   const body = (await request.json().catch(() => ({}))) as {
     fromPath?: string;
     toPath?: string;
@@ -46,4 +41,4 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "A redirect for that path already exists" }, { status: 400 });
   }
-}
+});
