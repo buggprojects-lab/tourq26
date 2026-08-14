@@ -213,6 +213,20 @@ export async function POST(req: Request) {
           let finishReason: string | undefined;
           let emittedText = false;
 
+          const processEvent = (rawEvent: string) => {
+            const dataLine = rawEvent.split("\n").find((l) => l.startsWith("data: "));
+            if (!dataLine) return;
+
+            const chunk = JSON.parse(dataLine.slice("data: ".length)) as GeminiStreamChunk;
+            const candidate = chunk.candidates?.[0];
+            const text = candidate?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+              emittedText = true;
+            }
+            if (candidate?.finishReason) finishReason = candidate.finishReason;
+          };
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -222,17 +236,22 @@ export async function POST(req: Request) {
             while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
               const rawEvent = buffer.slice(0, sepIndex);
               buffer = buffer.slice(sepIndex + 2);
-              const dataLine = rawEvent.split("\n").find((l) => l.startsWith("data: "));
-              if (!dataLine) continue;
+              processEvent(rawEvent);
+            }
+          }
 
-              const chunk = JSON.parse(dataLine.slice("data: ".length)) as GeminiStreamChunk;
-              const candidate = chunk.candidates?.[0];
-              const text = candidate?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-              if (text) {
-                controller.enqueue(encoder.encode(text));
-                emittedText = true;
-              }
-              if (candidate?.finishReason) finishReason = candidate.finishReason;
+          // The connection can close right after the last event without a trailing blank-line
+          // separator (common when that event — often the one carrying finishReason, e.g.
+          // MAX_TOKENS — is also the last thing Gemini sends). Flush the decoder for any
+          // trailing multi-byte UTF-8 and process whatever's left in `buffer`, otherwise that
+          // final chunk is silently dropped and the widget sees "no text" even though Gemini
+          // did respond.
+          buffer += decoder.decode();
+          if (buffer.trim()) {
+            try {
+              processEvent(buffer);
+            } catch (err) {
+              console.error("Failed to parse trailing Gemini SSE fragment:", err);
             }
           }
 

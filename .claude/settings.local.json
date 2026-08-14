@@ -103,7 +103,8 @@
       "Bash(node *)",
       "Bash(lsof -i :3000 -sTCP:LISTEN -P)",
       "Bash(lsof -i :3001 -sTCP:LISTEN -P)",
-      "Bash(kill 8123 8124)"
+      "Bash(kill 8123 8124)",
+      "Bash(vercel whoami *)"
     ]
   }
 }
