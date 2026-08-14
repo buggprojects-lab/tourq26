@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; isGreeting?: boolean };
 
 const GREETING: ChatMessage = {
   role: "assistant",
-  content: "Hi! I can answer questions about Torq Studio's services, pricing, and past work. What would you like to know?",
+  content:
+    "Hi! I can answer questions about Torq Studio's services, pricing, and past work. What would you like to know? आप हिंदी में भी पूछ सकते हैं।",
+  isGreeting: true,
 };
+
+const SUGGESTIONS = ["What services do you offer?", "How much does a project cost?", "Show me a recent case study"];
+
+const STORAGE_KEY = "torq-chat-messages";
+const TEASER_DISMISSED_KEY = "torq-chat-teaser-dismissed";
 
 async function streamChatResponse(
   messages: ChatMessage[],
@@ -18,7 +25,7 @@ async function streamChatResponse(
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })) }),
     signal,
   });
 
@@ -36,19 +43,154 @@ async function streamChatResponse(
   }
 }
 
+/** Inline markdown-lite: **bold** and [text](url) links — the only formatting the system prompt asks for. */
+function parseInline(text: string, keyPrefix: string): ReactNode[] {
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+
+  while ((match = pattern.exec(text))) {
+    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
+    if (match[1] !== undefined) {
+      nodes.push(
+        <a
+          key={`${keyPrefix}-${i++}`}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-[var(--app-primary)]"
+        >
+          {match[1]}
+        </a>,
+      );
+    } else if (match[3] !== undefined) {
+      nodes.push(<strong key={`${keyPrefix}-${i++}`}>{match[3]}</strong>);
+    }
+    lastIndex = pattern.lastIndex;
+  }
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  return nodes;
+}
+
+/** Block-level markdown-lite: groups "- " lines into a bullet list, everything else into paragraphs. */
+function renderMessageContent(content: string): ReactNode {
+  const blocks: ReactNode[] = [];
+  let listBuffer: string[] = [];
+  let blockKey = 0;
+
+  const flushList = () => {
+    if (!listBuffer.length) return;
+    const items = listBuffer;
+    listBuffer = [];
+    blocks.push(
+      <ul key={`ul-${blockKey++}`} className="list-disc space-y-1 pl-4">
+        {items.map((item, idx) => (
+          <li key={idx}>{parseInline(item, `li-${blockKey}-${idx}`)}</li>
+        ))}
+      </ul>,
+    );
+  };
+
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      listBuffer.push(line.slice(2));
+      continue;
+    }
+    flushList();
+    if (line) blocks.push(<p key={`p-${blockKey++}`}>{parseInline(line, `p-${blockKey}`)}</p>);
+  }
+  flushList();
+  return <div className="space-y-2">{blocks}</div>;
+}
+
+function TypingDots() {
+  return (
+    <span className="flex items-center gap-1 py-0.5" aria-label="Assistant is typing">
+      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-current" />
+      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-current" style={{ animationDelay: "0.15s" }} />
+      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-current" style={{ animationDelay: "0.3s" }} />
+    </span>
+  );
+}
+
+function BotAvatar({ className }: { className?: string }) {
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--app-primary)] text-[var(--app-primary-fg)] ${className ?? ""}`}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export default function FloatingChatWidget() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; retryText: string } | null>(null);
+  const [showTeaser, setShowTeaser] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const hydrated = useRef(false);
+
+  // Restore an in-progress conversation (per tab) so reopening the widget doesn't lose it.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as ChatMessage[];
+        if (Array.isArray(parsed) && parsed.length) setMessages(parsed);
+      }
+    } catch {
+      // Corrupt/blocked storage — fall back to the default greeting.
+    }
+    hydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // Storage full/blocked — persistence is a nicety, not required.
+    }
+  }, [messages]);
+
+  // Invite first-time visitors to engage, once, after they've had a moment to look around.
+  useEffect(() => {
+    if (sessionStorage.getItem(TEASER_DISMISSED_KEY)) return;
+    const timer = setTimeout(() => setShowTeaser(true), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, open]);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
@@ -56,9 +198,17 @@ export default function FloatingChatWidget() {
 
   if (pathname?.startsWith("/admin")) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
+  function dismissTeaser() {
+    setShowTeaser(false);
+    sessionStorage.setItem(TEASER_DISMISSED_KEY, "1");
+  }
+
+  function openChat() {
+    setOpen(true);
+    dismissTeaser();
+  }
+
+  async function sendMessage(text: string) {
     if (!text || sending) return;
 
     setError(null);
@@ -72,8 +222,7 @@ export default function FloatingChatWidget() {
 
     try {
       await streamChatResponse(
-        // Only role/content, and skip the initial greeting — it wasn't generated by the model.
-        nextMessages.filter((m) => m !== GREETING),
+        nextMessages.filter((m) => !m.isGreeting),
         (chunk) => {
           setMessages((prev) => {
             const copy = [...prev];
@@ -86,7 +235,10 @@ export default function FloatingChatWidget() {
       );
     } catch (err) {
       if (!(err instanceof DOMException && err.name === "AbortError")) {
-        setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+        setError({
+          message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+          retryText: text,
+        });
         setMessages((prev) => prev.slice(0, -1));
       }
     } finally {
@@ -94,55 +246,123 @@ export default function FloatingChatWidget() {
     }
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void sendMessage(input.trim());
+  }
+
   return (
     <>
+      {showTeaser && !open ? (
+        <div className="animate-fade-up fixed bottom-[6.5rem] right-6 z-50 flex max-w-[15rem] items-start gap-2 rounded-sm border border-[var(--app-hairline)] bg-[var(--app-bg)] px-3 py-2.5 text-sm text-[var(--app-fg)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px]">
+          <button
+            type="button"
+            onClick={openChat}
+            className="flex-1 text-left"
+          >
+            👋 Have a question? Ask our AI assistant.
+          </button>
+          <button
+            type="button"
+            onClick={dismissTeaser}
+            aria-label="Dismiss"
+            className="text-[var(--app-muted-fg)] hover:text-[var(--app-fg)]"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
+
       {open ? (
-        <div className="fixed bottom-40 right-6 z-50 flex h-[32rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-sm border border-[var(--color-hairline,#e5e5e5)] bg-[var(--color-canvas,#fff)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px]">
-          <div className="flex items-center justify-between border-b border-[var(--color-hairline,#e5e5e5)] px-4 py-3">
-            <span className="font-mono text-xs font-medium uppercase tracking-wide text-[var(--app-primary)]">
-              Torq Studio Assistant
-            </span>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Torq Studio chat assistant"
+          className="animate-scale-in fixed bottom-40 right-6 z-50 flex h-[32rem] max-h-[calc(100vh-8rem)] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-sm border border-[var(--app-hairline)] bg-[var(--app-bg)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px]"
+        >
+          <div className="flex items-center gap-3 border-b border-[var(--app-hairline)] px-4 py-3">
+            <BotAvatar className="h-9 w-9" />
+            <div className="min-w-0 flex-1">
+              <p className="mono-eyebrow truncate text-[var(--app-fg)]">Torq Studio Assistant</p>
+              <p className="flex items-center gap-1.5 text-xs text-[var(--app-muted-fg)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--app-success)]" aria-hidden />
+                Online · Replies instantly
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close chat"
-              className="text-neutral-500 hover:text-neutral-900"
+              className="shrink-0 text-[var(--app-muted-fg)] hover:text-[var(--app-fg)]"
             >
               ✕
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={
-                  m.role === "user"
-                    ? "ml-auto max-w-[85%] rounded-sm bg-primary px-3 py-2 text-primary-foreground"
-                    : "mr-auto max-w-[85%] rounded-sm bg-neutral-100 px-3 py-2 text-neutral-900"
-                }
-              >
-                {m.content || (sending && i === messages.length - 1 ? "…" : "")}
+          <div ref={scrollRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
+            {messages.map((m, i) => {
+              const isLast = i === messages.length - 1;
+              const isEmptyStreaming = !m.content && sending && isLast;
+              return (
+                <div key={i} className={m.role === "user" ? "ml-auto flex max-w-[85%] justify-end" : "mr-auto flex max-w-[85%] gap-2"}>
+                  {m.role === "assistant" ? <BotAvatar className="mt-0.5 h-6 w-6" /> : null}
+                  <div
+                    className={
+                      m.role === "user"
+                        ? "rounded-sm bg-[var(--app-primary)] px-3 py-2 text-[var(--app-primary-fg)]"
+                        : "rounded-sm bg-[var(--app-muted)] px-3 py-2 text-[var(--app-fg)]"
+                    }
+                  >
+                    {isEmptyStreaming ? <TypingDots /> : renderMessageContent(m.content)}
+                  </div>
+                </div>
+              );
+            })}
+
+            {messages.length === 1 && !sending ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => void sendMessage(s)}
+                    className="rounded-full border border-[var(--app-hairline)] px-3 py-1.5 text-xs text-[var(--app-fg)] transition-colors hover:border-[var(--app-primary)] hover:text-[var(--app-primary)]"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
-            ))}
-            {error ? <p className="text-xs text-red-600">{error}</p> : null}
+            ) : null}
+
+            {error ? (
+              <p className="text-xs text-[var(--app-destructive)]">
+                {error.message}{" "}
+                <button type="button" onClick={() => void sendMessage(error.retryText)} className="underline underline-offset-2">
+                  Try again
+                </button>
+              </p>
+            ) : null}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex gap-2 border-t border-[var(--color-hairline,#e5e5e5)] p-3">
+          <form onSubmit={handleSubmit} className="flex gap-2 border-t border-[var(--app-hairline)] p-3">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about our services..."
+              placeholder="Ask in English or Hindi..."
               disabled={sending}
-              className="flex-1 rounded-sm border border-[var(--color-hairline,#e5e5e5)] px-3 py-2 text-sm outline-none focus:border-[var(--app-primary)]"
+              className="text-input flex-1 py-2"
             />
             <button
               type="submit"
               disabled={sending || !input.trim()}
-              className="rounded-sm bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              aria-label="Send message"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-[var(--app-primary)] text-[var(--app-primary-fg)] transition-colors hover:bg-[var(--app-primary-hover)] disabled:opacity-50"
             >
-              Send
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 21 3l-5.5 18-4.5-7.5L3 9z" />
+              </svg>
             </button>
           </form>
         </div>
@@ -150,9 +370,9 @@ export default function FloatingChatWidget() {
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? setOpen(false) : openChat())}
         aria-label={open ? "Close chat assistant" : "Open chat assistant"}
-        className="fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px] transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        className="fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-primary)] text-[var(--app-primary-fg)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px] transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--app-primary)] focus:ring-offset-2"
       >
         {open ? (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6" aria-hidden>

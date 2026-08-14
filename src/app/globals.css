@@ -549,6 +549,18 @@ textarea:focus-visible {
     transform: translate3d(-2%, 2%, 0) rotate(2deg);
   }
 }
+@keyframes chat-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
 
 .animate-fade-up {
   animation: fade-up 0.55s cubic-bezier(0.2, 0, 0, 1) forwards;
@@ -558,6 +570,9 @@ textarea:focus-visible {
 }
 .animate-ribbon {
   animation: ribbon-drift 16s ease-in-out infinite;
+}
+.chat-typing-dot {
+  animation: chat-typing-bounce 1.2s ease-in-out infinite;
 }
 
 .animate-delay-1 {
@@ -579,7 +594,8 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-scale-in,
-  .animate-ribbon {
+  .animate-ribbon,
+  .chat-typing-dot {
     animation: none;
   }
   .card-hover:hover {

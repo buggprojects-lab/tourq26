@@ -87,7 +87,20 @@
       "Bash(sed -i '' 's#\"\\\\.\\\\./src/lib/hub/prisma\"#\"../src/lib/prisma\"#' prisma/seed-cms.ts)",
       "Bash(grep -rn \"toLocaleDateString\\(undefined, { day: \\\\\"2-digit\\\\\"\" src --include=\"*.tsx\" --include=\"*.ts\")",
       "Bash(npx vitest *)",
-      "Bash(curl -sS -m 5 -o /dev/null -w \"%{http_code}\\\\n\" https://fonts.gstatic.com)"
+      "Bash(curl -sS -m 5 -o /dev/null -w \"%{http_code}\\\\n\" https://fonts.gstatic.com)",
+      "Bash(sw_vers)",
+      "Bash(curl *)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(jobs -l)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(node -e \"require.resolve\\('playwright-core'\\)\")",
+      "Bash(find / -maxdepth 6 -iname \"*chromium-cli*\")",
+      "Bash(npm ls *)",
+      "Bash(npx playwright *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(node -e \"const {chromium} = require\\('playwright'\\); console.log\\(chromium.executablePath\\(\\)\\)\")",
+      "Bash(node check.js)",
+      "Bash(node *)"
     ]
   }
 }

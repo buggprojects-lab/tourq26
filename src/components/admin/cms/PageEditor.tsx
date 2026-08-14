@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -54,6 +54,46 @@ const PAGE_TYPES = [
   "CUSTOM",
 ] as const;
 
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function blockSummary(block: CmsBlock): string {
+  switch (block.type) {
+    case "hero":
+      return block.heading || "Untitled hero";
+    case "contentSection":
+      return block.heading || stripHtml(block.bodyHtml).slice(0, 70) || "Untitled section";
+    case "cta":
+      return block.heading || "Untitled CTA";
+    case "faq":
+      return `${block.items.length} question${block.items.length === 1 ? "" : "s"}`;
+    case "featureGrid":
+      return `${block.items.length} feature${block.items.length === 1 ? "" : "s"}`;
+    default:
+      return "";
+  }
+}
+
+function newBlockId(): string {
+  return `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+const SECTIONS = [
+  { id: "section-basics", label: "Basics" },
+  { id: "section-blocks", label: "Blocks" },
+  { id: "section-seo", label: "SEO & brief" },
+];
+
 export function PageEditor({
   mode,
   pageId,
@@ -64,11 +104,15 @@ export function PageEditor({
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(Boolean(initial?.slug));
   const [type, setType] = useState(initial?.type ?? "SERVICE");
   const [status, setStatus] = useState(initial?.status ?? "DRAFT");
   const [path, setPath] = useState(initial?.path ?? "");
   const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
   const [blocks, setBlocks] = useState<CmsBlock[]>(initial?.blocks ?? []);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragFromIndex = useRef<number | null>(null);
   const [metaTitle, setMetaTitle] = useState(initial?.seo.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(
     initial?.seo.metaDescription ?? "",
@@ -84,9 +128,25 @@ export function PageEditor({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [titleInvalid, setTitleInvalid] = useState(false);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [addType, setAddType] = useState<BlockTypeKey>("hero");
+  const titleRef = useRef<HTMLInputElement>(null);
 
   const previewPath = useMemo(() => path || `/${slug}`, [path, slug]);
+
+  function onTitleChange(value: string) {
+    setTitle(value);
+    if (value.trim()) setTitleInvalid(false);
+    if (mode === "create" && !slugTouched) {
+      setSlug(slugify(value));
+    }
+  }
+
+  function onSlugChange(value: string) {
+    setSlug(value);
+    setSlugTouched(true);
+  }
 
   function generateSeo() {
     const generated = generateSeoFromContent({
@@ -103,8 +163,15 @@ export function PageEditor({
   }
 
   async function save(publish = false) {
+    if (!title.trim()) {
+      setError("Title is required before saving.");
+      setTitleInvalid(true);
+      titleRef.current?.focus();
+      return;
+    }
     setSaving(true);
     setError(null);
+    setSavedNotice(null);
     const payload = {
       title,
       slug,
@@ -163,6 +230,7 @@ export function PageEditor({
             body: JSON.stringify({ action: "publish" }),
           });
         }
+        setSavedNotice(publish ? "Published." : "Draft saved.");
         router.refresh();
       }
     } catch (e) {
@@ -191,6 +259,38 @@ export function PageEditor({
     });
   }
 
+  function reorderBlocks(from: number, to: number) {
+    setBlocks((prev) => {
+      if (from < 0 || from >= prev.length || to < 0 || to >= prev.length || from === to) {
+        return prev;
+      }
+      const copy = [...prev];
+      const [item] = copy.splice(from, 1);
+      copy.splice(to, 0, item);
+      return copy;
+    });
+  }
+
+  function duplicateBlock(id: string) {
+    setBlocks((prev) => {
+      const idx = prev.findIndex((b) => b.id === id);
+      if (idx < 0) return prev;
+      const clone = { ...prev[idx], id: newBlockId() } as CmsBlock;
+      const copy = [...prev];
+      copy.splice(idx + 1, 0, clone);
+      return copy;
+    });
+  }
+
+  function toggleCollapsed(id: string) {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-8">
       {error ? (
@@ -199,75 +299,144 @@ export function PageEditor({
         </p>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Title</span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Slug</span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Type</span>
-          <select
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
+      <nav
+        aria-label="Jump to section"
+        className="sticky top-0 z-10 -mx-5 flex items-center gap-1 border-b border-border/60 bg-background/95 px-5 py-2.5 backdrop-blur lg:-mx-8 lg:px-8"
+      >
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className="mono-label rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
           >
-            {PAGE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Path</span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={path}
-            placeholder="auto from type + slug"
-            onChange={(e) => setPath(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm lg:col-span-2">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="mono-label text-muted-foreground">Excerpt</span>
-            <AiGenerateButton<string>
-              task="excerpt"
-              variant="inline"
-              context={{ title, bodyText: extractTextFromCmsBlocks(blocks) }}
-              onResult={setExcerpt}
-              disabled={!title.trim() && blocks.length === 0}
-            />
-          </span>
-          <textarea
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            rows={2}
-            value={excerpt}
-            onChange={(e) => setExcerpt(e.target.value)}
-          />
-        </label>
-      </div>
+            {s.label}
+          </a>
+        ))}
+      </nav>
 
-      <section className="space-y-4 border-t border-border/60 pt-6">
+      <section id="section-basics" className="card-flat scroll-mt-16 space-y-6">
+        <div>
+          <h2 className="display-sm text-foreground">Basics</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Title, URL, and the short excerpt used in previews and generated SEO copy.
+          </p>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <label className="block text-sm">
+            <span className="flex items-center justify-between gap-2">
+              <span className="mono-label text-muted-foreground">
+                Title <span className="text-[color:var(--app-destructive)]">*</span>
+              </span>
+            </span>
+            <input
+              ref={titleRef}
+              className={`mt-1.5 w-full rounded-md border bg-background px-3 py-2 ${
+                titleInvalid ? "border-[color:var(--app-destructive)]" : "border-border"
+              }`}
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              aria-invalid={titleInvalid}
+            />
+            {titleInvalid ? (
+              <span className="mt-1 block text-xs text-[color:var(--app-destructive)]">
+                Title is required.
+              </span>
+            ) : null}
+          </label>
+          <label className="block text-sm">
+            <span className="flex items-center justify-between gap-2">
+              <span className="mono-label text-muted-foreground">Slug</span>
+              {mode === "create" && slugTouched ? (
+                <button
+                  type="button"
+                  className="mono-label text-muted-foreground/80 underline decoration-dotted underline-offset-2 hover:text-foreground"
+                  onClick={() => {
+                    setSlugTouched(false);
+                    setSlug(slugify(title));
+                  }}
+                >
+                  Reset to auto
+                </button>
+              ) : null}
+            </span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={slug}
+              placeholder="auto from title"
+              onChange={(e) => onSlugChange(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mono-label text-muted-foreground">Type</span>
+            <select
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+            >
+              {PAGE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="mono-label text-muted-foreground">Path</span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={path}
+              placeholder="auto from type + slug"
+              onChange={(e) => setPath(e.target.value)}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Resolves to <span className="font-mono">{previewPath}</span>
+            </span>
+          </label>
+          <label className="block text-sm lg:col-span-2">
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="mono-label text-muted-foreground">Excerpt</span>
+              <AiGenerateButton<string>
+                task="excerpt"
+                variant="inline"
+                context={{ title, bodyText: extractTextFromCmsBlocks(blocks) }}
+                onResult={setExcerpt}
+                disabled={!title.trim() && blocks.length === 0}
+              />
+            </span>
+            <textarea
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              rows={2}
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section id="section-blocks" className="card-flat scroll-mt-16 space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="display-sm text-foreground">Blocks</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Compose the page from reusable sections. Preview path: {previewPath}
+              Compose the page from reusable sections. Drag the grip to reorder.
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {blocks.length > 1 ? (
+              <button
+                type="button"
+                className="mono-label text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                onClick={() =>
+                  setCollapsedIds(
+                    collapsedIds.size === blocks.length
+                      ? new Set()
+                      : new Set(blocks.map((b) => b.id)),
+                  )
+                }
+              >
+                {collapsedIds.size === blocks.length ? "Expand all" : "Collapse all"}
+              </button>
+            ) : null}
             <select
               className="rounded-md border border-border bg-background px-3 py-2 text-sm"
               value={addType}
@@ -289,55 +458,131 @@ export function PageEditor({
           </div>
         </div>
 
-        <ul className="space-y-4">
-          {blocks.map((block, index) => (
-            <li
-              key={block.id}
-              className="rounded-md border border-border/60 bg-muted/20 p-4"
-            >
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="mono-eyebrow text-muted-foreground">
-                  {String(index + 1).padStart(2, "0")} · {block.type}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="btn-base btn-secondary !px-2 !py-1 text-xs"
-                    onClick={() => moveBlock(block.id, -1)}
-                  >
-                    Up
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-base btn-secondary !px-2 !py-1 text-xs"
-                    onClick={() => moveBlock(block.id, 1)}
-                  >
-                    Down
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-base btn-secondary !px-2 !py-1 text-xs"
-                    onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-              <BlockFields
-                block={block}
-                pageTitle={title}
-                pageContext={excerpt}
-                onChange={(patch) => updateBlock(block.id, patch)}
-              />
-            </li>
-          ))}
-        </ul>
+        {blocks.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
+            No blocks yet — add one above to start building the page.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {blocks.map((block, index) => {
+              const collapsed = collapsedIds.has(block.id);
+              const label = BLOCK_TYPE_OPTIONS.find((o) => o.type === block.type)?.label ?? block.type;
+              return (
+                <li
+                  key={block.id}
+                  className={`rounded-md border border-border/60 bg-muted/20 transition-opacity ${
+                    draggingId === block.id ? "opacity-40" : ""
+                  }`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const from = dragFromIndex.current;
+                    dragFromIndex.current = null;
+                    setDraggingId(null);
+                    if (from !== null) reorderBlocks(from, index);
+                  }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        draggable
+                        role="button"
+                        aria-label="Drag to reorder"
+                        title="Drag to reorder"
+                        className="cursor-grab select-none px-1 py-1 text-muted-foreground/60 hover:text-foreground active:cursor-grabbing"
+                        onDragStart={(e) => {
+                          dragFromIndex.current = index;
+                          setDraggingId(block.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragEnd={() => {
+                          dragFromIndex.current = null;
+                          setDraggingId(null);
+                        }}
+                      >
+                        ⠿
+                      </span>
+                      <button
+                        type="button"
+                        className="flex min-w-0 items-center gap-2 text-left"
+                        onClick={() => toggleCollapsed(block.id)}
+                        aria-expanded={!collapsed}
+                      >
+                        <span
+                          className="inline-block shrink-0 text-muted-foreground transition-transform"
+                          style={{ transform: collapsed ? "rotate(-90deg)" : "none" }}
+                          aria-hidden
+                        >
+                          ▾
+                        </span>
+                        <span className="mono-eyebrow shrink-0 rounded-full border border-border/70 px-2 py-0.5 text-muted-foreground">
+                          {String(index + 1).padStart(2, "0")} · {label}
+                        </span>
+                        <span className="truncate text-sm text-foreground/80">
+                          {blockSummary(block)}
+                        </span>
+                      </button>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        type="button"
+                        className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                        title="Move up"
+                        aria-label="Move block up"
+                        disabled={index === 0}
+                        onClick={() => moveBlock(block.id, -1)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                        title="Move down"
+                        aria-label="Move block down"
+                        disabled={index === blocks.length - 1}
+                        onClick={() => moveBlock(block.id, 1)}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                        title="Duplicate block"
+                        onClick={() => duplicateBlock(block.id)}
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-base btn-secondary !px-2 !py-1 text-xs"
+                        title="Remove block"
+                        onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  {collapsed ? null : (
+                    <div className="border-t border-border/50 p-4">
+                      <BlockFields
+                        block={block}
+                        pageTitle={title}
+                        pageContext={excerpt}
+                        onChange={(patch) => updateBlock(block.id, patch)}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
-      <section className="grid gap-4 border-t border-border/60 pt-6 lg:grid-cols-2">
-        <div className="flex flex-wrap items-end justify-between gap-3 lg:col-span-2">
+      <section id="section-seo" className="card-flat scroll-mt-16 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="display-sm text-foreground">SEO</h2>
+            <h2 className="display-sm text-foreground">SEO & brief</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Generate meta from title, excerpt, and page blocks, then refine below.
             </p>
@@ -364,123 +609,127 @@ export function PageEditor({
           </div>
         </div>
 
-        <div className="lg:col-span-2">
-          <SerpPreview
-            siteUrl={siteUrl}
-            path={previewPath}
-            title={
-              (metaTitle.trim() || title || "Page title") +
-              (siteName ? ` | ${siteName}` : "")
-            }
-            description={metaDescription || excerpt}
-          />
-        </div>
-
-        <label className="block text-sm">
-          <span className="flex items-center justify-between gap-2">
-            <span className="mono-label text-muted-foreground">Meta title</span>
-            <span
-              className={`mono-label tabular-nums ${
-                (metaTitle || title).length > 60
-                  ? "text-[color:var(--app-destructive)]"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {(metaTitle || title).length} / ~60
-            </span>
-          </span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={metaTitle}
-            placeholder={title || "Defaults to page title"}
-            onChange={(e) => setMetaTitle(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Focus keyword</span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={focusKeyword}
-            onChange={(e) => setFocusKeyword(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm lg:col-span-2">
-          <span className="flex items-center justify-between gap-2">
-            <span className="mono-label text-muted-foreground">Meta description</span>
-            <span
-              className={`mono-label tabular-nums ${
-                metaDescription.length > 160
-                  ? "text-[color:var(--app-destructive)]"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {metaDescription.length} / ~160
-            </span>
-          </span>
-          <textarea
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            rows={3}
-            value={metaDescription}
-            placeholder="Write or generate from page content"
-            onChange={(e) => setMetaDescription(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={robotsIndex}
-            onChange={(e) => setRobotsIndex(e.target.checked)}
-          />
-          Index
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={robotsFollow}
-            onChange={(e) => setRobotsFollow(e.target.checked)}
-          />
-          Follow
-        </label>
-        <label className="block text-sm">
-          <span className="mono-label text-muted-foreground">Brief target keyword</span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={targetKeyword}
-            onChange={(e) => setTargetKeyword(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="mono-label text-muted-foreground">
-              Secondary keywords (comma-separated)
-            </span>
-            <AiGenerateButton<{ keywords: string[] }>
-              task="keywordSuggestions"
-              variant="inline"
-              label="Suggest"
-              context={{ title, bodyText: extractTextFromCmsBlocks(blocks) || excerpt }}
-              onResult={({ keywords }) =>
-                setSecondaryKeywords(
-                  Array.from(
-                    new Set([
-                      ...secondaryKeywords.split(",").map((s) => s.trim()).filter(Boolean),
-                      ...keywords,
-                    ]),
-                  ).join(", "),
-                )
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="lg:col-span-2">
+            <SerpPreview
+              siteUrl={siteUrl}
+              path={previewPath}
+              title={
+                (metaTitle.trim() || title || "Page title") +
+                (siteName ? ` | ${siteName}` : "")
               }
-              disabled={!title.trim() && blocks.length === 0}
+              description={metaDescription || excerpt}
             />
-          </span>
-          <input
-            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
-            value={secondaryKeywords}
-            onChange={(e) => setSecondaryKeywords(e.target.value)}
-          />
-        </label>
+          </div>
+
+          <label className="block text-sm">
+            <span className="flex items-center justify-between gap-2">
+              <span className="mono-label text-muted-foreground">Meta title</span>
+              <span
+                className={`mono-label tabular-nums ${
+                  (metaTitle || title).length > 60
+                    ? "text-[color:var(--app-destructive)]"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {(metaTitle || title).length} / ~60
+              </span>
+            </span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={metaTitle}
+              placeholder={title || "Defaults to page title"}
+              onChange={(e) => setMetaTitle(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mono-label text-muted-foreground">Focus keyword</span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={focusKeyword}
+              onChange={(e) => setFocusKeyword(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm lg:col-span-2">
+            <span className="flex items-center justify-between gap-2">
+              <span className="mono-label text-muted-foreground">Meta description</span>
+              <span
+                className={`mono-label tabular-nums ${
+                  metaDescription.length > 160
+                    ? "text-[color:var(--app-destructive)]"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {metaDescription.length} / ~160
+              </span>
+            </span>
+            <textarea
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              rows={3}
+              value={metaDescription}
+              placeholder="Write or generate from page content"
+              onChange={(e) => setMetaDescription(e.target.value)}
+            />
+          </label>
+          <div className="flex items-center gap-5">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={robotsIndex}
+                onChange={(e) => setRobotsIndex(e.target.checked)}
+              />
+              Index
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={robotsFollow}
+                onChange={(e) => setRobotsFollow(e.target.checked)}
+              />
+              Follow
+            </label>
+          </div>
+          <label className="block text-sm">
+            <span className="mono-label text-muted-foreground">Brief target keyword</span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={targetKeyword}
+              onChange={(e) => setTargetKeyword(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="mono-label text-muted-foreground">
+                Secondary keywords (comma-separated)
+              </span>
+              <AiGenerateButton<{ keywords: string[] }>
+                task="keywordSuggestions"
+                variant="inline"
+                label="Suggest"
+                context={{ title, bodyText: extractTextFromCmsBlocks(blocks) || excerpt }}
+                onResult={({ keywords }) =>
+                  setSecondaryKeywords(
+                    Array.from(
+                      new Set([
+                        ...secondaryKeywords.split(",").map((s) => s.trim()).filter(Boolean),
+                        ...keywords,
+                      ]),
+                    ).join(", "),
+                  )
+                }
+                disabled={!title.trim() && blocks.length === 0}
+              />
+            </span>
+            <input
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+              value={secondaryKeywords}
+              onChange={(e) => setSecondaryKeywords(e.target.value)}
+            />
+          </label>
+        </div>
       </section>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-border/60 pt-6">
+      <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-5 py-4 backdrop-blur lg:-mx-8 lg:px-8">
         <button
           type="button"
           className="btn-base btn-primary"
@@ -501,6 +750,9 @@ export function PageEditor({
           <Link href={path} className="btn-base btn-secondary" target="_blank">
             View live
           </Link>
+        ) : null}
+        {savedNotice ? (
+          <span className="mono-label text-muted-foreground">{savedNotice}</span>
         ) : null}
       </div>
     </div>
