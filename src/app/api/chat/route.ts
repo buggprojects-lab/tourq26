@@ -27,6 +27,11 @@ const OLLAMA_CHAT_MODEL = process.env.OLLAMA_CHAT_MODEL || "llama3.1";
 const FALLBACK_MESSAGE =
   "\n\nI'm not able to help with that. Please reach out via /contact and our team will follow up directly.";
 const ERROR_MESSAGE = "\n\nSomething went wrong on our end. Please try again in a moment.";
+// Distinct from ERROR_MESSAGE: shown when Gemini's daily free-tier request quota is exhausted,
+// where "try again in a moment" is actively misleading — it won't recover until the daily
+// quota resets, so we point visitors to a human instead of telling them to retry.
+const QUOTA_EXCEEDED_MESSAGE =
+  "\n\nOur AI assistant has hit its usage limit for today. Please reach out via /contact and our team will follow up directly.";
 const MODERATION_MESSAGE =
   "Let's keep things respectful — could you rephrase that without the language, please? I'm happy to help with your question about Torq Studio.\n\nकृपया बिना अपशब्दों के अपना सवाल दोबारा लिखें, मैं आपकी मदद करने के लिए तैयार हूं।";
 // Gemini finish reasons that mean the response was blocked/incomplete, not a normal stop.
@@ -204,7 +209,16 @@ export async function POST(req: Request) {
           );
 
           if (!res.ok || !res.body) {
-            throw new Error(`Gemini request failed (${res.status}): ${await res.text()}`);
+            const errorBody = await res.text();
+            if (res.status === 429) {
+              // Retrying (fetchGeminiWithRetry already tried twice) doesn't help when this is
+              // the daily free-tier quota, not a short-lived rate limit — it won't reset for
+              // hours, so tell the visitor plainly instead of implying a retry will work.
+              console.error(`Gemini quota/rate limit hit (429): ${errorBody}`);
+              controller.enqueue(encoder.encode(QUOTA_EXCEEDED_MESSAGE));
+              return;
+            }
+            throw new Error(`Gemini request failed (${res.status}): ${errorBody}`);
           }
 
           const reader = res.body.getReader();
