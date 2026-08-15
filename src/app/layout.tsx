@@ -130,6 +130,12 @@ export default async function RootLayout({
     <html lang="en">
       {googleFontsSlugs.length || cssVarOverrides.length ? (
         <head>
+          {googleFontsSlugs.length ? (
+            <>
+              <link rel="preconnect" href="https://fonts.googleapis.com" />
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            </>
+          ) : null}
           {googleFontsSlugs.map((slug) => (
             <link
               key={slug}
