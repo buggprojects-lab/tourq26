@@ -1,5 +1,4 @@
 import { readSiteContent } from "@/lib/content";
-import { getExternalDevToolsOrigin } from "@/lib/dev-tools-marketing";
 
 type CmsLink = { title: string; path: string; type: string };
 
@@ -62,17 +61,7 @@ export async function buildLlmsTxtBody(): Promise<string> {
   const base = site.siteUrl.replace(/\/$/, "");
   const name = site.siteName;
   const desc = site.defaultDescription;
-  const devToolsOrigin = getExternalDevToolsOrigin();
   const cmsLinks = await loadPublishedCmsLinks();
-
-  const devToolsSection = devToolsOrigin
-    ? `## Developer tools (separate product)
-
-- [Developer tools hub](${devToolsOrigin}/dev-tools): Formatters, generators, converters (run in the browser)
-- [Dev tools — about](${devToolsOrigin}/dev-tools/about): Scope, privacy, and limitations
-
-`
-    : "";
 
   const cmsSections = [
     sectionForType("SERVICE", cmsLinks, base),
@@ -97,7 +86,7 @@ export async function buildLlmsTxtBody(): Promise<string> {
 
 > ${desc}
 
-Public marketing site for **${name}**, a software engineering studio (mobile apps, web, AI integration, consulting). Developer utilities live on Torq DevTools when linked below. This file is a **curated index** for language models and agents. Canonical content lives on the linked HTML pages.
+Public marketing site for **${name}**, a software engineering studio (mobile apps, web, AI integration, consulting). This file is a **curated index** for language models and agents. Canonical content lives on the linked HTML pages.
 
 **Machine-readable discovery:** [Sitemap](${base}/sitemap.xml) · [Robots](${base}/robots.txt)
 
@@ -123,7 +112,7 @@ Public marketing site for **${name}**, a software engineering studio (mobile app
 
 - [Freebies](${base}/freebies): Downloadable checklists and templates
 
-${cmsSections}${otherSection}${devToolsSection}## Legal
+${cmsSections}${otherSection}## Legal
 
 - [Privacy policy](${base}/privacy)
 - [Terms of use](${base}/terms)

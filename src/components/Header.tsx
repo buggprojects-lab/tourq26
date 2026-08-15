@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useExternalDevToolsHubHref } from "@/hooks/useExternalDevToolsHubHref";
 import type { NavLink, NavMegaMenus } from "@/lib/nav-content";
 
 /**
@@ -13,44 +12,19 @@ import type { NavLink, NavMegaMenus } from "@/lib/nav-content";
  * dark hero bands and white product bands.
  */
 
-export type HeaderNavFlags = {
-  showTools?: boolean;
-};
-
-const DEV_TOOLS_LINK = { href: "/dev-tools", label: "Dev tools" };
-
-function buildNavLinks(
-  navLinks: NavLink[],
-  flags: HeaderNavFlags | undefined,
-  devToolsExternalHref: string | null,
-) {
-  const showTools = flags?.showTools !== false;
-  const links: { href: string; label: string; openInNewTab?: boolean }[] = [...navLinks];
-  if (showTools && devToolsExternalHref) {
-    links.push(DEV_TOOLS_LINK);
-  }
-  return links;
-}
-
 export default function Header({
   navLinks = [],
   megaMenus = {},
-  navFlags,
   logoUrl,
 }: {
   navLinks?: NavLink[];
   megaMenus?: NavMegaMenus;
-  navFlags?: HeaderNavFlags;
   logoUrl?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
-  const devToolsExternalHref = useExternalDevToolsHubHref();
-  const resolvedLinks = useMemo(
-    () => buildNavLinks(navLinks, navFlags, devToolsExternalHref),
-    [navLinks, navFlags, devToolsExternalHref],
-  );
+  const resolvedLinks = navLinks;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -85,25 +59,23 @@ export default function Header({
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">
           {resolvedLinks.map((link) => {
-            const isDevTools = link.href === "/dev-tools";
-            const href = isDevTools ? devToolsExternalHref! : link.href;
-            const isActive = !isDevTools && pathname === link.href;
-            const menuItems = isDevTools ? undefined : megaMenus[link.href];
+            const isActive = pathname === link.href;
+            const menuItems = megaMenus[link.href];
             const hasMenu = !!menuItems && menuItems.length > 0;
 
             return (
               <div
-                key={isDevTools ? "dev-tools" : link.href}
+                key={link.href}
                 className={hasMenu ? "group/nav relative" : "relative"}
               >
                 <Link
-                  href={href}
+                  href={link.href}
                   aria-current={isActive ? "page" : undefined}
                   aria-haspopup={hasMenu ? "true" : undefined}
                   className={`group relative py-1 text-[14px] font-medium tracking-tight text-inherit transition-opacity duration-200 ${
                     isActive ? "opacity-100" : "opacity-85 hover:opacity-100"
                   }`}
-                  {...(isDevTools || link.openInNewTab
+                  {...(link.openInNewTab
                     ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}
                 >
@@ -193,19 +165,17 @@ export default function Header({
           <div className="flex flex-col gap-3 px-4 py-4">
             <nav className="flex flex-col gap-1" aria-label="Mobile primary">
               {resolvedLinks.map((link) => {
-                const isDevTools = link.href === "/dev-tools";
-                const href = isDevTools ? devToolsExternalHref! : link.href;
-                const isActive = !isDevTools && pathname === link.href;
+                const isActive = pathname === link.href;
                 return (
                   <Link
-                    key={isDevTools ? "dev-tools" : link.href}
-                    href={href}
+                    key={link.href}
+                    href={link.href}
                     onClick={() => setOpen(false)}
                     aria-current={isActive ? "page" : undefined}
                     className={`rounded-[var(--radius-sm)] px-3 py-3 text-[15px] font-medium transition-colors duration-150 hover:bg-white/5 hover:text-white ${
                       isActive ? "bg-white/5 text-white" : "text-white/80"
                     }`}
-                    {...(isDevTools || link.openInNewTab
+                    {...(link.openInNewTab
                       ? { target: "_blank", rel: "noopener noreferrer" }
                       : {})}
                   >

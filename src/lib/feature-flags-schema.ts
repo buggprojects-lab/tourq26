@@ -2,7 +2,6 @@ export const FEATURE_FLAG_KEYS = [
   "maintenance_mode",
   "marketing_contact_form",
   "marketing_blog",
-  "nav_tools",
   "floating_whatsapp",
   "floating_chat_assistant",
   "dev_tools_code_playground",
@@ -44,15 +43,6 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     category: "Marketing",
     defaultEnabled: true,
     envOverride: "FF_MARKETING_BLOG",
-  },
-  {
-    key: "nav_tools",
-    label: "Nav: Dev tools link",
-    description:
-      "Header link to the standalone Torq DevTools app. Requires NEXT_PUBLIC_DEV_TOOLS_URL (origin) to be set in env.",
-    category: "Marketing",
-    defaultEnabled: true,
-    envOverride: "FF_NAV_TOOLS",
   },
   {
     key: "floating_whatsapp",

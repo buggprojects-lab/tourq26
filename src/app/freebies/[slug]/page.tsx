@@ -12,6 +12,9 @@ import { breadcrumbListJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
 import { getFreebieExtraProseParagraphs } from "@/data/freebie-page-extra-prose";
 
+/** Only slugs from the content module resolve; unknown URLs 404 (no accidental SSR). */
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   return freebies.map((f) => ({ slug: f.slug }));
 }

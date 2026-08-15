@@ -111,7 +111,22 @@
       "Bash(grep -o 'Build CRM</h2>.\\\\{0,160\\\\}' __TRACKED_VAR__/solutions2.html)",
       "Bash(npx --no-install chromium-cli --help)",
       "Bash(lsof -i :11434 -sTCP:LISTEN)",
-      "Bash(ollama ps *)"
+      "Bash(ollama ps *)",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"blog -> %{http_code}\\\\n\" \"http://localhost:3000/blog/this-does-not-exist-xyz\")",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"services -> %{http_code}\\\\n\" \"http://localhost:3000/services/this-does-not-exist-xyz\")",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"case-studies -> %{http_code}\\\\n\" \"http://localhost:3000/case-studies/this-does-not-exist-xyz\")",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"tech-news -> %{http_code}\\\\n\" \"http://localhost:3000/tech-news/this-does-not-exist-xyz\")",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"freebies -> %{http_code}\\\\n\" \"http://localhost:3000/freebies/this-does-not-exist-xyz\")",
+      "Bash(pkill -f \"next start\")",
+      "Bash(mv src/app/loading.tsx /tmp/loading.tsx.bak)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN)",
+      "Bash(/usr/bin/curl -s -D - \"http://localhost:3000/freebies/this-does-not-exist-xyz\" -o /tmp/fb404.html)",
+      "Bash(/usr/bin/curl -s -D - \"http://localhost:3000/tech-news/this-does-not-exist-xyz\" -o /tmp/tn404.html)",
+      "WebFetch(domain:github.com)",
+      "Bash(kill 9225)",
+      "Bash(mkdir -p \"src/app/__probe404/[slug]\")",
+      "Bash(cat)",
+      "Bash(/usr/bin/curl -sv \"http://localhost:3000/probe404test/ok-value\")"
     ]
   }
 }

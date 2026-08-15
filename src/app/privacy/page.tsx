@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
-import { PrivacyDevToolsLink } from "@/components/PrivacyDevToolsLink";
 import { getSiteUrl } from "@/lib/site-url";
 import { breadcrumbListJsonLd } from "@/lib/seo";
 
@@ -108,10 +107,8 @@ export default async function PrivacyPage() {
             Developer utilities on this website
           </h2>
           <p className="mt-2 text-muted-foreground leading-relaxed">
-            The utilities at{" "}
-            <PrivacyDevToolsLink className="text-primary hover:underline" />{" "}
-            (SVG to CSS, JSON to CSV, CSS shadow preview) run in your browser. Your inputs are not sent to our servers
-            for those pages.
+            The utilities on Torq DevTools (SVG to CSS, JSON to CSV, CSS shadow preview) run in your browser. Your
+            inputs are not sent to our servers for those pages.
           </p>
           <h2 className="mt-8 font-display text-lg font-semibold text-foreground">
             Security & your rights

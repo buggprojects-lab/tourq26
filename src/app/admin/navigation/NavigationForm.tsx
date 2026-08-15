@@ -48,8 +48,7 @@ export function NavigationForm({ initialLinks }: { initialLinks: NavLink[] }) {
       <section className="card-flat space-y-4">
         <h2 className="font-display text-base font-semibold text-foreground">Primary navigation</h2>
         <p className="text-sm text-muted-foreground">
-          Shown in the top nav on every marketing page. The &ldquo;Dev tools&rdquo; link is not listed here — it only
-          appears when the <span className="font-mono">nav_tools</span> feature flag is on.
+          Shown in the top nav on every marketing page.
         </p>
         <div className="space-y-4">
           {links.map((link, i) => (
