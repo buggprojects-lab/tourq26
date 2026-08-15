@@ -104,7 +104,12 @@
       "Bash(lsof -i :3000 -sTCP:LISTEN -P)",
       "Bash(lsof -i :3001 -sTCP:LISTEN -P)",
       "Bash(kill 8123 8124)",
-      "Bash(vercel whoami *)"
+      "Bash(vercel whoami *)",
+      "Bash(sed -n '/enum PageType/,/}/p' ./prisma/schema.prisma)",
+      "Bash(sed -n '/enum EntityKind/,/}/p' ./prisma/schema.prisma)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN -t)",
+      "Bash(grep -o 'Build CRM</h2>.\\\\{0,160\\\\}' __TRACKED_VAR__/solutions2.html)",
+      "Bash(npx --no-install chromium-cli --help)"
     ]
   }
 }
