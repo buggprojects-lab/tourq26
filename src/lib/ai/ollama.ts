@@ -8,7 +8,10 @@ type ParsableSchema<T> = {
 
 const BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1";
 const MODEL = process.env.OLLAMA_CONTENT_MODEL ?? "qwen2.5:14b-instruct";
-const TIMEOUT_MS = 45_000;
+/** A 14B-class model can take well over 45s to load into memory on a cold start (Ollama unloads
+ *  idle models after its `keep_alive` window). Generation itself is fast once loaded, so the
+ *  timeout needs to cover a worst-case cold load, not just inference time. */
+const TIMEOUT_MS = 120_000;
 
 /** Ollama unreachable — server down, wrong port, etc. */
 export class AiUnavailableError extends Error {}
@@ -22,6 +25,12 @@ function chatModel() {
 function isConnectionError(err: unknown): boolean {
   const cause = (err as { cause?: { code?: string } } | undefined)?.cause;
   return cause?.code === "ECONNREFUSED" || cause?.code === "ENOTFOUND" || cause?.code === "ETIMEDOUT";
+}
+
+/** `AbortSignal.timeout()` fires a `DOMException` named "TimeoutError" — distinct from a refused
+ *  connection, since Ollama is reachable but just hasn't responded yet (usually a cold model load). */
+function isTimeoutError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "TimeoutError";
 }
 
 function isModelNotFoundError(err: unknown): boolean {
@@ -50,7 +59,12 @@ export async function generateFieldContent(params: {
         `Model "${MODEL}" is not pulled. Run \`ollama pull ${MODEL}\` and try again.`,
       );
     }
-    if (isConnectionError(err) || err instanceof DOMException) {
+    if (isTimeoutError(err)) {
+      throw new AiUnavailableError(
+        "AI took too long to respond — the model may still be loading into memory after being idle. Try again in a moment.",
+      );
+    }
+    if (isConnectionError(err)) {
       throw new AiUnavailableError(
         "AI is unavailable — make sure Ollama is running (`ollama serve`) on " + BASE_URL,
       );

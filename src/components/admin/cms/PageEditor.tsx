@@ -16,6 +16,7 @@ import {
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { SerpPreview } from "@/components/admin/SerpPreview";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { SeoAnalysisSidebar } from "@/components/admin/cms/SeoAnalysisSidebar";
 
 type PageEditorProps = {
   mode: "create" | "edit";
@@ -291,6 +292,24 @@ export function PageEditor({
     });
   }
 
+  const seoAnalysisInput = useMemo(() => {
+    const heroBlock = blocks.find((b) => b.type === "hero");
+    const hasHeading = blocks.some(
+      (b) => (b.type === "contentSection" || b.type === "hero") && Boolean(b.heading?.trim()),
+    );
+    const hasLink = blocks.some((b) => {
+      if (b.type === "contentSection") return /<a[\s>]/i.test(b.bodyHtml);
+      if (b.type === "cta") return /<a[\s>]/i.test(b.body ?? "");
+      return false;
+    });
+    return {
+      bodyText: extractTextFromCmsBlocks(blocks),
+      heroHeading: heroBlock?.type === "hero" ? heroBlock.heading : "",
+      hasHeading,
+      hasLink,
+    };
+  }, [blocks]);
+
   return (
     <div className="space-y-8">
       {error ? (
@@ -313,6 +332,9 @@ export function PageEditor({
           </a>
         ))}
       </nav>
+
+      <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
+      <div className="space-y-8 lg:col-span-8">
 
       <section id="section-basics" className="card-flat scroll-mt-16 space-y-6">
         <div>
@@ -568,6 +590,8 @@ export function PageEditor({
                         block={block}
                         pageTitle={title}
                         pageContext={excerpt}
+                        pageFocusKeyword={focusKeyword || targetKeyword}
+                        pageSecondaryKeywords={secondaryKeywords}
                         onChange={(patch) => updateBlock(block.id, patch)}
                       />
                     </div>
@@ -729,6 +753,25 @@ export function PageEditor({
         </div>
       </section>
 
+      </div>
+
+      <div className="lg:sticky lg:top-16 lg:col-span-4">
+        <SeoAnalysisSidebar
+          title={title}
+          slug={slug}
+          metaTitle={metaTitle}
+          metaDescription={metaDescription}
+          focusKeyword={focusKeyword || targetKeyword}
+          secondaryKeywords={secondaryKeywords.split(",").map((s) => s.trim()).filter(Boolean)}
+          bodyText={seoAnalysisInput.bodyText}
+          heroHeading={seoAnalysisInput.heroHeading}
+          hasHeading={seoAnalysisInput.hasHeading}
+          hasLink={seoAnalysisInput.hasLink}
+        />
+      </div>
+
+      </div>
+
       <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-5 py-4 backdrop-blur lg:-mx-8 lg:px-8">
         <button
           type="button"
@@ -763,11 +806,15 @@ function BlockFields({
   block,
   pageTitle,
   pageContext,
+  pageFocusKeyword,
+  pageSecondaryKeywords,
   onChange,
 }: {
   block: CmsBlock;
   pageTitle: string;
   pageContext: string;
+  pageFocusKeyword: string;
+  pageSecondaryKeywords: string;
   onChange: (patch: Partial<CmsBlock>) => void;
 }) {
   if (block.type === "hero") {
@@ -803,6 +850,16 @@ function BlockFields({
           value={block.primaryCtaHref ?? ""}
           onChange={(v) => onChange({ primaryCtaHref: v })}
         />
+        <Field
+          label="Secondary CTA label"
+          value={block.secondaryCtaLabel ?? ""}
+          onChange={(v) => onChange({ secondaryCtaLabel: v })}
+        />
+        <Field
+          label="Secondary CTA href"
+          value={block.secondaryCtaHref ?? ""}
+          onChange={(v) => onChange({ secondaryCtaHref: v })}
+        />
       </div>
     );
   }
@@ -820,6 +877,40 @@ function BlockFields({
               variant="inline"
               context={{ title: block.heading || pageTitle, contentType: "section", brief: pageContext || block.heading || pageTitle }}
               onResult={(html) => onChange({ bodyHtml: html })}
+              extraFields={[
+                {
+                  key: "primaryKeyword",
+                  label: "Primary keyword",
+                  type: "text",
+                  defaultValue: pageFocusKeyword,
+                  placeholder: "e.g. CRM development",
+                },
+                {
+                  key: "secondaryKeywords",
+                  label: "Secondary keywords",
+                  type: "text",
+                  defaultValue: pageSecondaryKeywords,
+                  placeholder: "comma-separated",
+                },
+                {
+                  key: "paragraphCount",
+                  label: "Paragraphs",
+                  type: "number",
+                  defaultValue: "4",
+                },
+                {
+                  key: "targetWords",
+                  label: "Target length (words)",
+                  type: "number",
+                  defaultValue: "500",
+                },
+                {
+                  key: "avoid",
+                  label: "Avoid",
+                  type: "textarea",
+                  placeholder: "e.g. don't mention pricing, avoid buzzwords like \"revolutionary\", no fabricated stats",
+                },
+              ]}
             />
           </span>
           <div className="mt-1.5">
@@ -873,6 +964,16 @@ function BlockFields({
           label="Primary CTA href"
           value={block.primaryCtaHref ?? ""}
           onChange={(v) => onChange({ primaryCtaHref: v })}
+        />
+        <Field
+          label="Secondary CTA label"
+          value={block.secondaryCtaLabel ?? ""}
+          onChange={(v) => onChange({ secondaryCtaLabel: v })}
+        />
+        <Field
+          label="Secondary CTA href"
+          value={block.secondaryCtaHref ?? ""}
+          onChange={(v) => onChange({ secondaryCtaHref: v })}
         />
         <label className="flex items-center gap-2 text-sm sm:col-span-2">
           <input

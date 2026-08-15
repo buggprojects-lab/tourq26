@@ -14,6 +14,29 @@ const VARIANT_CLASS: Record<Variant, string> = {
   outline: "btn-base btn-outline",
 };
 
+/** An extra structured control shown above the free-text brief — its value is appended to the
+ *  brief as `${label}: ${value}` before generation, so it reads as a normal, editable instruction
+ *  rather than a hidden parameter. */
+export type ExtraField = {
+  key: string;
+  label: string;
+  type: "text" | "number" | "textarea";
+  defaultValue?: string;
+  placeholder?: string;
+  helpText?: string;
+};
+
+function formatExtraFields(fields: ExtraField[], values: Record<string, string>): string {
+  return fields
+    .map((f) => {
+      const value = (values[f.key] ?? "").trim();
+      if (!value) return "";
+      return `${f.label}: ${value}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function AiGenerateButton<T = string | Record<string, unknown>>({
   task,
   context,
@@ -22,6 +45,7 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
   variant = "secondary",
   disabled,
   className,
+  extraFields,
 }: {
   task: TaskName;
   context: Record<string, unknown>;
@@ -30,14 +54,21 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
   variant?: Variant;
   disabled?: boolean;
   className?: string;
+  /** Optional structured controls (keyword targeting, length, things to avoid, etc.) rendered
+   *  above the brief textarea. Folded into the brief text at generation time. */
+  extraFields?: ExtraField[];
 }) {
   const { run, previewBrief, loading, previewLoading, error, setError } = useAiGenerate();
   const [open, setOpen] = useState(false);
   const [brief, setBrief] = useState("");
+  const [extraValues, setExtraValues] = useState<Record<string, string>>({});
 
   const openModal = async () => {
     setError("");
     setOpen(true);
+    setExtraValues(
+      Object.fromEntries((extraFields ?? []).map((f) => [f.key, f.defaultValue ?? ""])),
+    );
     setBrief(await previewBrief(task, context));
   };
 
@@ -47,7 +78,9 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
   };
 
   const generate = async () => {
-    const result = await run<T>(task, context, brief);
+    const extra = extraFields?.length ? formatExtraFields(extraFields, extraValues) : "";
+    const fullBrief = extra ? `${brief}\n\n${extra}` : brief;
+    const result = await run<T>(task, context, fullBrief);
     if (result !== null) {
       onResult(result);
       setOpen(false);
@@ -70,7 +103,11 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
       <Dialog open={open} onClose={close} className="relative z-50">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 text-foreground shadow-2xl">
+          <DialogPanel
+            className={`w-full rounded-2xl border border-border bg-surface p-6 text-foreground shadow-2xl ${
+              extraFields?.length ? "max-w-2xl" : "max-w-lg"
+            }`}
+          >
             <DialogTitle className="font-display text-lg font-semibold">
               {TASK_LABELS[task] ?? "Generate with AI"}
             </DialogTitle>
@@ -79,6 +116,41 @@ export function AiGenerateButton<T = string | Record<string, unknown>>({
                 ? `This will fill in: ${fields.join(", ")}. Optimized for SEO — feel free to add your own details below.`
                 : "Optimized for SEO — feel free to add your own details below."}
             </p>
+
+            {extraFields?.length ? (
+              <div className="mt-4 grid gap-3 rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:grid-cols-2">
+                {extraFields.map((f) => (
+                  <label
+                    key={f.key}
+                    className={`block text-sm ${f.type === "textarea" ? "sm:col-span-2" : ""}`}
+                  >
+                    <span className="mono-label text-muted-foreground">{f.label}</span>
+                    {f.type === "textarea" ? (
+                      <textarea
+                        value={extraValues[f.key] ?? ""}
+                        onChange={(e) => setExtraValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                        disabled={loading}
+                        rows={2}
+                        placeholder={f.placeholder}
+                        className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      />
+                    ) : (
+                      <input
+                        type={f.type === "number" ? "number" : "text"}
+                        value={extraValues[f.key] ?? ""}
+                        onChange={(e) => setExtraValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                        disabled={loading}
+                        placeholder={f.placeholder}
+                        className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      />
+                    )}
+                    {f.helpText ? (
+                      <span className="mt-1 block text-[12px] text-muted-foreground">{f.helpText}</span>
+                    ) : null}
+                  </label>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-4">
               <label className="mono-label text-muted-foreground">What should the AI write about?</label>

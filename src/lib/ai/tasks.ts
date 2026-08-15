@@ -77,7 +77,7 @@ export type TaskName =
 
 /** Full prompt sent to the model: the (possibly admin-edited) brief + the fixed, hidden format contract. */
 export function buildFullPrompt(def: TaskDef, brief: string): string {
-  return `${brief}\n\n${def.responseContract}`;
+  return `${brief}\n\n${def.responseContract}\n\nFollow every length and format instruction above exactly — if a field asks for multiple sentences, write multiple full sentences, not one. Do not shortcut a field just because a shorter answer would also be valid English.`;
 }
 
 export const TASKS: Record<TaskName, TaskDef> = {
@@ -102,11 +102,11 @@ export const TASKS: Record<TaskName, TaskDef> = {
   },
   longFormBody: {
     mode: "text",
-    system: `${HOUSE_VOICE}\nOutput clean HTML using only <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, and <a> tags. Never include an <h1> — the page title already renders as the H1. Open with the takeaway, not a throat-clearing intro. Write at least 3-4 substantial paragraphs with section headings — a single short paragraph is not acceptable output for this task.`,
+    system: `${HOUSE_VOICE}\nOutput clean HTML using only <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, and <a> tags. Never include an <h1> — the page title already renders as the H1. Open with the takeaway, not a throat-clearing intro. Write at least 3-4 substantial paragraphs with section headings — a single short paragraph is not acceptable output for this task. If the brief specifies a paragraph count, target word count, a primary or secondary keyword, or things to avoid, treat those as hard requirements, not suggestions: hit the paragraph count exactly, work the primary keyword in naturally within the first paragraph and a few more times throughout, weave in secondary keywords where they fit naturally, and never include anything listed under "Avoid". A target word count is a floor, not a ceiling — if you're tempted to stop short of it, add another concrete example, detail, or elaboration to each paragraph instead of wrapping up early; running noticeably under the target is a bigger failure than running slightly over.`,
     buildBrief: (context) =>
       `Write the full body copy for a ${ctx(context, "contentType") || "page"} titled "${ctx(context, "title")}".\nBrief: ${ctx(context, "brief").slice(0, 3000)}`,
     responseContract: `Return ONLY the HTML body content (no <html>/<head>/<body> wrapper).`,
-    maxOutputTokens: 1600,
+    maxOutputTokens: 2600,
   },
   heroCopy: {
     mode: "object",
@@ -118,7 +118,7 @@ export const TASKS: Record<TaskName, TaskDef> = {
     }),
     buildBrief: (context) =>
       `Write hero-banner copy for a page about: ${ctx(context, "topic")}.\nPurpose: ${ctx(context, "purpose") || "convert a first-time visitor"}`,
-    responseContract: `Return JSON: { "eyebrow": string (2-4 words, a short label above the heading), "heading": string (one punchy sentence naming the outcome, no period), "subheading": string (one supporting sentence, ~15-25 words) }.`,
+    responseContract: `Return JSON: { "eyebrow": string (2-4 words, a short label above the heading), "heading": string (one complete, natural sentence naming the outcome, up to ~12 words), "subheading": string (a short paragraph of 2-3 complete sentences, ~35-55 words total — not just one line, expand with a concrete detail or proof point) }.`,
   },
   ctaCopy: {
     mode: "object",
@@ -130,7 +130,7 @@ export const TASKS: Record<TaskName, TaskDef> = {
     }),
     buildBrief: (context) =>
       `Write a closing call-to-action section.\nPurpose: ${ctx(context, "purpose")}\nAudience: ${ctx(context, "audience") || "a prospective client"}`,
-    responseContract: `Return JSON: { "heading": string (short, direct), "body": string (a short paragraph, 2-4 sentences — not just one line), "primaryCtaLabel": string (2-4 word button label, verb-first) }.`,
+    responseContract: `Return JSON: { "heading": string (short, direct), "body": string (write exactly 2 to 4 complete sentences as one short paragraph — a single sentence is never acceptable here, expand with a concrete benefit or next step if needed), "primaryCtaLabel": string (2-4 word button label, verb-first) }.`,
   },
   itemCopy: {
     mode: "object",

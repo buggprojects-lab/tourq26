@@ -109,7 +109,9 @@
       "Bash(sed -n '/enum EntityKind/,/}/p' ./prisma/schema.prisma)",
       "Bash(lsof -i :3000 -sTCP:LISTEN -t)",
       "Bash(grep -o 'Build CRM</h2>.\\\\{0,160\\\\}' __TRACKED_VAR__/solutions2.html)",
-      "Bash(npx --no-install chromium-cli --help)"
+      "Bash(npx --no-install chromium-cli --help)",
+      "Bash(lsof -i :11434 -sTCP:LISTEN)",
+      "Bash(ollama ps *)"
     ]
   }
 }
