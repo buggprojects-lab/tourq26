@@ -75,6 +75,21 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (!flags.business_systems_audit) {
+    if (pathname === "/business-systems" || pathname.startsWith("/business-systems/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/feature-unavailable";
+      url.searchParams.set("k", "business_systems_audit");
+      return NextResponse.redirect(url);
+    }
+    if (pathname === "/api/business-systems/audit" && method === "POST") {
+      return NextResponse.json(
+        { error: "feature_disabled", message: "The audit form is temporarily disabled." },
+        { status: 503 },
+      );
+    }
+  }
+
   if (!flags.marketing_blog && (pathname === "/blog" || pathname.startsWith("/blog/"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/feature-unavailable";

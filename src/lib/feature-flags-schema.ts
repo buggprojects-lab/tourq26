@@ -5,6 +5,7 @@ export const FEATURE_FLAG_KEYS = [
   "floating_whatsapp",
   "floating_chat_assistant",
   "dev_tools_code_playground",
+  "business_systems_audit",
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
@@ -69,6 +70,15 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     category: "Site",
     defaultEnabled: true,
     envOverride: "FF_DEV_TOOLS_CODE_PLAYGROUND",
+  },
+  {
+    key: "business_systems_audit",
+    label: "Business Systems Audit (Meta Ads landing page)",
+    description:
+      "/business-systems, /business-systems/audit, and POST /api/business-systems/audit. Turn off between ad flights to stop accepting submissions without deleting the pages.",
+    category: "Marketing",
+    defaultEnabled: true,
+    envOverride: "FF_BUSINESS_SYSTEMS_AUDIT",
   },
 ] as const;
 

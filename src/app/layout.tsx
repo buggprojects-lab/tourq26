@@ -4,6 +4,7 @@ import "./globals.css";
 import { readSiteContent } from "@/lib/content";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import FloatingChatWidget from "@/components/FloatingChatWidget";
+import MetaPixel from "@/components/MetaPixel";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { readBrandContent, findBrandFont } from "@/lib/brand-content";
 
@@ -166,6 +167,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        <MetaPixel />
         {children}
         {showWhatsApp ? <FloatingWhatsApp /> : null}
         {showChatAssistant ? <FloatingChatWidget /> : null}

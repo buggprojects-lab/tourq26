@@ -906,3 +906,60 @@ model KnowledgeChunk {
   @@unique([sourceType, sourceId, chunkIndex])
   @@index([sourceType, sourceId])
 }
+
+// ─────────────────────────────────────────────
+// Business Systems Audit — Meta Ads lead qualification
+// (/business-systems, /business-systems/audit — see src/lib/business-systems/*)
+// ─────────────────────────────────────────────
+
+enum AuditLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CALL_SCHEDULED
+  CALL_COMPLETED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+// businessType/teamSize/budget/timeline/currentProblems/requestedServices are plain strings
+// validated against the option lists in src/lib/business-systems/options.ts rather than Prisma
+// enums — Mongo has no schema-level enum enforcement anyway, so keeping them app-level config
+// means adding/renaming an option doesn't require a migration. leadCategory (LOW/MEDIUM/HIGH/HOT)
+// is derived from leadScore on read (src/lib/business-systems/scoring.ts), not stored, so the
+// scoring bands stay a single-place config change.
+model AuditLead {
+  id                String   @id @default(cuid()) @map("_id")
+  name              String
+  email             String
+  phone             String
+  companyName       String
+  website           String?
+  businessType      String
+  teamSize          String
+  currentProblems   String[] @default([])
+  requestedServices String[] @default([])
+  budget            String
+  timeline          String
+  message           String?
+
+  leadScore  Int             @default(0)
+  leadStatus AuditLeadStatus @default(NEW)
+
+  source      String?
+  medium      String?
+  campaign    String?
+  term        String?
+  content     String?
+  landingPage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([leadStatus, createdAt])
+  @@index([email])
+  @@index([phone])
+}

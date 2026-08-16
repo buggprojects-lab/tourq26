@@ -6,6 +6,7 @@ import {
 } from "@/lib/content";
 import { getResolvedFeatureFlags } from "@/lib/feature-flags";
 import { readCaseStudies } from "@/lib/case-studies-content";
+import { countNewAuditLeads } from "@/lib/audit-leads-content";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopBar } from "./AdminTopBar";
 import "quill/dist/quill.snow.css";
@@ -23,12 +24,13 @@ export default async function AdminLayout({
     );
   }
 
-  const [posts, submissions, flags, caseStudies, chatFeedback] = await Promise.all([
+  const [posts, submissions, flags, caseStudies, chatFeedback, newLeadCount] = await Promise.all([
     readBlogPosts(),
     readContactSubmissions(),
     getResolvedFeatureFlags(),
     readCaseStudies(),
     readChatFeedback(),
+    countNewAuditLeads(),
   ]);
   const draftCount = posts.filter(
     (p) => (p.status ?? "published") === "draft",
@@ -44,6 +46,7 @@ export default async function AdminLayout({
           contactCount={submissions.length}
           caseStudyCount={caseStudies.length}
           chatFeedbackCount={chatFeedback.length}
+          newLeadCount={newLeadCount}
           maintenanceOn={flags.maintenance_mode === true}
         />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-background">

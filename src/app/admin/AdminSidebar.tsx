@@ -12,6 +12,7 @@ export function AdminSidebar({
   contactCount,
   caseStudyCount,
   chatFeedbackCount,
+  newLeadCount,
   maintenanceOn,
 }: {
   blogCount: number;
@@ -19,6 +20,7 @@ export function AdminSidebar({
   contactCount: number;
   caseStudyCount: number;
   chatFeedbackCount: number;
+  newLeadCount: number;
   maintenanceOn: boolean;
 }) {
   const pathname = usePathname() || "";
@@ -54,6 +56,11 @@ export function AdminSidebar({
       id: "inbox",
       label: "INBOX",
       items: [{ href: "/admin/contact", label: "Contact form", badge: contactCount }],
+    },
+    {
+      id: "leads",
+      label: "LEADS",
+      items: [{ href: "/admin/leads", label: "Business Systems Audit", badge: newLeadCount }],
     },
     {
       id: "chatbot",
