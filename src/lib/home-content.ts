@@ -216,7 +216,7 @@ function getDefaultHomeContent(): HomeContent {
     ctaPrimaryHref: "/contact",
     ctaSecondaryLabel: "Get started now",
     ctaSecondaryHref: "/contact",
-    ctaEmail: "hello@torqstudio.com",
+    ctaEmail: "connect@torqstudio.com",
     ctaFootnote: "NO COMMITMENT · 24 HOUR REPLY",
 
     snapshotHeading: "Snapshot for technical decision-makers",

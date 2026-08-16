@@ -53,7 +53,7 @@ function getDefaultFooterContent(): FooterContent {
         eyebrow: "GET STARTED",
         links: [
           { href: "/contact", label: "Book a consultation" },
-          { href: "mailto:hello@torqstudio.com", label: "hello@torqstudio.com" },
+          { href: "mailto:connect@torqstudio.com", label: "connect@torqstudio.com" },
           { href: "/services", label: "Service catalogue" },
         ],
       },

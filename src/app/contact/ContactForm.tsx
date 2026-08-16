@@ -62,7 +62,7 @@ export default function ContactForm() {
         setErrorMessage(
           typeof data.error === "string"
             ? data.error
-            : "Something went wrong. Please try again or email hello@torqstudio.com.",
+            : "Something went wrong. Please try again or email connect@torqstudio.com.",
         );
         return;
       }
@@ -72,7 +72,7 @@ export default function ContactForm() {
     } catch {
       setStatus("error");
       setErrorMessage(
-        "Something went wrong. Please try again or email hello@torqstudio.com.",
+        "Something went wrong. Please try again or email connect@torqstudio.com.",
       );
     }
   };

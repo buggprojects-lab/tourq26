@@ -50,10 +50,10 @@ export default async function ContactPage() {
                 Free 30-min consultation, no commitment. Fill in the form and
                 we&apos;ll reply within 24 hours — or email{" "}
                 <a
-                  href="mailto:hello@torqstudio.com"
+                  href="mailto:connect@torqstudio.com"
                   className="text-white underline underline-offset-4 decoration-white/40 hover:decoration-white"
                 >
-                  hello@torqstudio.com
+                  connect@torqstudio.com
                 </a>{" "}
                 directly with attachments and background links.
               </p>
@@ -147,10 +147,10 @@ export default async function ContactPage() {
                 <p className="mt-6 border-t border-hairline pt-6 text-[14px] text-muted-foreground">
                   Prefer email?{" "}
                   <a
-                    href="mailto:hello@torqstudio.com"
+                    href="mailto:connect@torqstudio.com"
                     className="text-foreground underline underline-offset-4 decoration-[var(--app-hairline)] hover:decoration-[var(--app-fg)]"
                   >
-                    hello@torqstudio.com
+                    connect@torqstudio.com
                   </a>{" "}
                   · We respond within 24 hours.
                 </p>
