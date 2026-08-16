@@ -55,6 +55,11 @@ export default async function AdminContactPage() {
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
                     {s.message}
                   </p>
+                  {s.source || s.medium || s.campaign ? (
+                    <p className="mt-2 font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                      {[s.source, s.medium, s.campaign].filter(Boolean).join(" / ")}
+                    </p>
+                  ) : null}
                 </div>
                 <time
                   className="shrink-0 font-mono text-xs uppercase tracking-wide text-muted-foreground"

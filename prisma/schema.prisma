@@ -752,6 +752,13 @@ model ContactSubmission {
   company   String?
   message   String
   createdAt DateTime @default(now())
+
+  source      String?
+  medium      String?
+  campaign    String?
+  term        String?
+  content     String?
+  landingPage String?
 }
 
 model ChatFeedback {

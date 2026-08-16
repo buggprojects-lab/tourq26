@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const message = typeof body.message === "string" ? body.message.trim() : "";
     const company = typeof body.company === "string" ? body.company.trim() : "";
+    const utmField = (value: unknown, maxLength: number) =>
+      typeof value === "string" && value.trim() ? value.trim().slice(0, maxLength) : undefined;
+    const source = utmField(body.utmSource, 200);
+    const medium = utmField(body.utmMedium, 200);
+    const campaign = utmField(body.utmCampaign, 200);
+    const term = utmField(body.utmTerm, 200);
+    const content = utmField(body.utmContent, 200);
+    const landingPage = utmField(body.landingPage, 300);
 
     if (!name || !email || !message) {
       return jsonError(400, "Name, email, and message are required.");
@@ -23,7 +31,7 @@ export async function POST(request: NextRequest) {
       return jsonError(400, "Message is too long.");
     }
 
-    await addContactSubmission({ name, email, company, message });
+    await addContactSubmission({ name, email, company, message, source, medium, campaign, term, content, landingPage });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("Contact submission error:", e);

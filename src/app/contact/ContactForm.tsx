@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { MAX_CONTACT_MESSAGE_LENGTH } from "@/lib/constants";
+import { readStoredUtmParams } from "@/lib/utm";
 
 type FormData = { name: string; email: string; company: string; message: string };
 type FieldErrors = Partial<Record<"name" | "email" | "message", string>>;
@@ -45,6 +46,7 @@ export default function ContactForm() {
 
     setStatus("sending");
     setErrorMessage("");
+    const utm = readStoredUtmParams();
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -54,6 +56,12 @@ export default function ContactForm() {
           email: formData.email,
           company: formData.company || undefined,
           message: formData.message,
+          utmSource: utm?.utmSource,
+          utmMedium: utm?.utmMedium,
+          utmCampaign: utm?.utmCampaign,
+          utmTerm: utm?.utmTerm,
+          utmContent: utm?.utmContent,
+          landingPage: utm?.landingPage,
         }),
       });
       const data = await res.json().catch(() => ({}));

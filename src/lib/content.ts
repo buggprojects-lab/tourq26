@@ -84,6 +84,12 @@ export type ContactSubmission = {
   company: string;
   message: string;
   createdAt: string; // ISO
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  term?: string;
+  content?: string;
+  landingPage?: string;
 };
 
 export type ChatFeedback = {
@@ -329,6 +335,12 @@ export async function readContactSubmissions(): Promise<ContactSubmission[]> {
       company: c.company ?? "",
       message: c.message,
       createdAt: c.createdAt.toISOString(),
+      source: c.source ?? undefined,
+      medium: c.medium ?? undefined,
+      campaign: c.campaign ?? undefined,
+      term: c.term ?? undefined,
+      content: c.content ?? undefined,
+      landingPage: c.landingPage ?? undefined,
     }));
   } catch {
     return [];
@@ -340,6 +352,12 @@ export async function addContactSubmission(input: {
   email: string;
   company?: string;
   message: string;
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  term?: string;
+  content?: string;
+  landingPage?: string;
 }): Promise<ContactSubmission> {
   const row = await prisma.contactSubmission.create({
     data: {
@@ -347,6 +365,12 @@ export async function addContactSubmission(input: {
       email: input.email.trim(),
       company: (input.company ?? "").trim(),
       message: input.message.trim(),
+      source: input.source,
+      medium: input.medium,
+      campaign: input.campaign,
+      term: input.term,
+      content: input.content,
+      landingPage: input.landingPage,
     },
   });
   return {
@@ -356,6 +380,12 @@ export async function addContactSubmission(input: {
     company: row.company ?? "",
     message: row.message,
     createdAt: row.createdAt.toISOString(),
+    source: row.source ?? undefined,
+    medium: row.medium ?? undefined,
+    campaign: row.campaign ?? undefined,
+    term: row.term ?? undefined,
+    content: row.content ?? undefined,
+    landingPage: row.landingPage ?? undefined,
   };
 }
 
