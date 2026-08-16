@@ -754,6 +754,25 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 }
 
+model ChatFeedback {
+  id             String   @id @default(cuid()) @map("_id")
+  rating         String // "up" | "down"
+  userQuery      String
+  assistantReply String
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model ChatQueryLog {
+  id             String   @id @default(cuid()) @map("_id")
+  query          String
+  fromSuggestion Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model CaseStudyPost {
   id          String   @id @default(cuid()) @map("_id")
   slug        String   @unique

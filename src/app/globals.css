@@ -408,6 +408,17 @@ textarea:focus-visible {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Grid items default to min-width:auto (content-based), which lets a card's  */
+/* own content force its grid track — and the whole row — wider than the      */
+/* viewport on mobile. Every card grid here uses fixed column counts, never   */
+/* content-driven auto-fit/auto-fill, so it's always safe to let items shrink */
+/* to the track width instead of their content's natural size.                */
+/* -------------------------------------------------------------------------- */
+.grid > * {
+  min-width: 0;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Cards (DESIGN.md → article-card, research-card, testimonial-card, stat)   */
 /* -------------------------------------------------------------------------- */
 .card-flat {

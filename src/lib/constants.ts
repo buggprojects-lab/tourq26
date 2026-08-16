@@ -12,3 +12,6 @@ export const MAX_CONTACT_MESSAGE_LENGTH = 10000;
 /** Max chat history length and per-message length for POST /api/chat. */
 export const MAX_CHAT_HISTORY_MESSAGES = 10;
 export const MAX_CHAT_MESSAGE_LENGTH = 4000;
+
+/** Max length of an assistant reply stored on POST /api/chat/feedback. */
+export const MAX_CHAT_REPLY_LENGTH = 8000;

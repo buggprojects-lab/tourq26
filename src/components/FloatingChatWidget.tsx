@@ -20,13 +20,14 @@ const TEASER_DISMISSED_KEY = "torq-chat-teaser-dismissed";
 
 async function streamChatResponse(
   messages: ChatMessage[],
+  isSuggestion: boolean,
   onDelta: (chunk: string) => void,
   signal: AbortSignal,
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })) }),
+    body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })), isSuggestion }),
     signal,
   });
 
@@ -44,34 +45,88 @@ async function streamChatResponse(
   }
 }
 
-/** Inline markdown-lite: **bold** and [text](url) links — the only formatting the system prompt asks for. */
+async function submitChatFeedback(rating: "up" | "down", userQuery: string, assistantReply: string): Promise<void> {
+  try {
+    await fetch("/api/chat/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, userQuery, assistantReply }),
+    });
+  } catch {
+    // Feedback is a nicety — a failed submit shouldn't disrupt the conversation.
+  }
+}
+
+// Bare URLs/paths the model didn't wrap in markdown link syntax — auto-linked as a safety net.
+// Negative lookbehind keeps this from matching mid-word/number things like "24/7" or "10/10".
+const BARE_LINK_PATTERN = /(https?:\/\/[^\s)]+)|(?<![\w/])(\/[a-zA-Z0-9][a-zA-Z0-9\-_/]*)/g;
+
+/** Auto-links bare URLs/paths within a plain-text (non-markdown) segment. */
+function linkifyPlainText(text: string, keyPrefix: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  BARE_LINK_PATTERN.lastIndex = 0;
+
+  while ((match = BARE_LINK_PATTERN.exec(text))) {
+    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
+    const href = match[0];
+    nodes.push(
+      <a
+        key={`${keyPrefix}-bare-${i++}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:text-[var(--app-primary)]"
+      >
+        {href}
+      </a>,
+    );
+    lastIndex = BARE_LINK_PATTERN.lastIndex;
+  }
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  return nodes;
+}
+
+/** Inline markdown-lite: **bold**, [text](url) links, ![alt](url) images — plus a bare-URL/path fallback. */
 function parseInline(text: string, keyPrefix: string): ReactNode[] {
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  const pattern = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let i = 0;
 
   while ((match = pattern.exec(text))) {
-    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
-    if (match[1] !== undefined) {
+    if (match.index > lastIndex) nodes.push(...linkifyPlainText(text.slice(lastIndex, match.index), `${keyPrefix}-${i}`));
+    if (match[2] !== undefined) {
+      nodes.push(
+        <img
+          key={`${keyPrefix}-${i++}`}
+          src={match[2]}
+          alt={match[1] || ""}
+          loading="lazy"
+          className="max-w-full rounded-sm"
+        />,
+      );
+    } else if (match[3] !== undefined) {
       nodes.push(
         <a
           key={`${keyPrefix}-${i++}`}
-          href={match[2]}
+          href={match[4]}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 hover:text-[var(--app-primary)]"
         >
-          {match[1]}
+          {match[3]}
         </a>,
       );
-    } else if (match[3] !== undefined) {
-      nodes.push(<strong key={`${keyPrefix}-${i++}`}>{match[3]}</strong>);
+    } else if (match[5] !== undefined) {
+      nodes.push(<strong key={`${keyPrefix}-${i++}`}>{match[5]}</strong>);
     }
     lastIndex = pattern.lastIndex;
   }
-  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  if (lastIndex < text.length) nodes.push(...linkifyPlainText(text.slice(lastIndex), `${keyPrefix}-${i}`));
   return nodes;
 }
 
@@ -141,6 +196,7 @@ export default function FloatingChatWidget() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<{ message: string; retryText: string } | null>(null);
   const [showTeaser, setShowTeaser] = useState(false);
+  const [feedback, setFeedback] = useState<Record<number, "up" | "down">>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -209,7 +265,7 @@ export default function FloatingChatWidget() {
     dismissTeaser();
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, opts?: { isSuggestion?: boolean }) {
     if (!text || sending) return;
 
     setError(null);
@@ -224,6 +280,7 @@ export default function FloatingChatWidget() {
     try {
       await streamChatResponse(
         nextMessages.filter((m) => !m.isGreeting),
+        !!opts?.isSuggestion,
         (chunk) => {
           setMessages((prev) => {
             const copy = [...prev];
@@ -279,7 +336,7 @@ export default function FloatingChatWidget() {
           role="dialog"
           aria-modal="true"
           aria-label="Torq Studio chat assistant"
-          className="animate-scale-in fixed bottom-40 right-6 z-50 flex h-[32rem] max-h-[calc(100vh-8rem)] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-sm border border-[var(--app-hairline)] bg-[var(--app-bg)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px]"
+          className="animate-scale-in fixed bottom-40 right-6 z-50 flex h-[32rem] max-h-[calc(100vh-11rem)] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-sm border border-[var(--app-hairline)] bg-[var(--app-bg)] shadow-[rgba(1,1,32,0.1)_0px_4px_10px_0px]"
         >
           <div className="flex items-center gap-3 border-b border-[var(--app-hairline)] px-4 py-3">
             <BotAvatar className="h-9 w-9" />
@@ -304,36 +361,84 @@ export default function FloatingChatWidget() {
             {messages.map((m, i) => {
               const isLast = i === messages.length - 1;
               const isEmptyStreaming = !m.content && sending && isLast;
+              const canRate = m.role === "assistant" && !m.isGreeting && m.content && !(sending && isLast);
+              const userQuery = canRate ? messages[i - 1]?.content : undefined;
+              const vote = feedback[i];
               return (
-                <div key={i} className={m.role === "user" ? "ml-auto flex max-w-[85%] justify-end" : "mr-auto flex max-w-[85%] gap-2"}>
-                  {m.role === "assistant" ? <BotAvatar className="mt-0.5 h-6 w-6" /> : null}
-                  <div
-                    className={
-                      m.role === "user"
-                        ? "rounded-sm bg-[var(--app-primary)] px-3 py-2 text-[var(--app-primary-fg)]"
-                        : "rounded-sm bg-[var(--app-muted)] px-3 py-2 text-[var(--app-fg)]"
-                    }
-                  >
-                    {isEmptyStreaming ? <TypingDots /> : renderMessageContent(m.content)}
+                <div key={i} className={m.role === "user" ? "ml-auto flex max-w-[85%] justify-end" : "mr-auto flex max-w-[85%] flex-col gap-1"}>
+                  <div className="flex gap-2">
+                    {m.role === "assistant" ? <BotAvatar className="mt-0.5 h-6 w-6" /> : null}
+                    <div
+                      className={
+                        m.role === "user"
+                          ? "rounded-sm bg-[var(--app-primary)] px-3 py-2 text-[var(--app-primary-fg)]"
+                          : "rounded-sm bg-[var(--app-muted)] px-3 py-2 text-[var(--app-fg)]"
+                      }
+                    >
+                      {isEmptyStreaming ? <TypingDots /> : renderMessageContent(m.content)}
+                    </div>
                   </div>
+                  {canRate && userQuery ? (
+                    <div className="ml-8 flex gap-1.5">
+                      <button
+                        type="button"
+                        aria-label="Good response"
+                        disabled={!!vote}
+                        onClick={() => {
+                          setFeedback((prev) => ({ ...prev, [i]: "up" }));
+                          void submitChatFeedback("up", userQuery, m.content);
+                        }}
+                        className={`rounded-sm px-1.5 py-0.5 text-xs transition-colors ${
+                          vote === "up"
+                            ? "text-[var(--app-primary)]"
+                            : "text-[var(--app-muted-fg)] hover:text-[var(--app-fg)] disabled:opacity-40"
+                        }`}
+                      >
+                        👍
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Bad response"
+                        disabled={!!vote}
+                        onClick={() => {
+                          setFeedback((prev) => ({ ...prev, [i]: "down" }));
+                          void submitChatFeedback("down", userQuery, m.content);
+                        }}
+                        className={`rounded-sm px-1.5 py-0.5 text-xs transition-colors ${
+                          vote === "down"
+                            ? "text-[var(--app-destructive)]"
+                            : "text-[var(--app-muted-fg)] hover:text-[var(--app-fg)] disabled:opacity-40"
+                        }`}
+                      >
+                        👎
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
 
-            {messages.length === 1 && !sending ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => void sendMessage(s)}
-                    className="rounded-full border border-[var(--app-hairline)] px-3 py-1.5 text-xs text-[var(--app-fg)] transition-colors hover:border-[var(--app-primary)] hover:text-[var(--app-primary)]"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            {(() => {
+              const lastMessage = messages[messages.length - 1];
+              if (sending || lastMessage?.role !== "assistant" || !lastMessage.content) return null;
+              const asked = new Set(messages.filter((m) => m.role === "user").map((m) => m.content));
+              const remaining = SUGGESTIONS.filter((s) => !asked.has(s));
+              if (!remaining.length) return null;
+              return (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {remaining.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => void sendMessage(s, { isSuggestion: true })}
+                      className="rounded-full border border-[var(--app-hairline)] px-3 py-1.5 text-xs text-[var(--app-fg)] transition-colors hover:border-[var(--app-primary)] hover:text-[var(--app-primary)]"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {error ? (
               <p className="text-xs text-[var(--app-destructive)]">

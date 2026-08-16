@@ -86,6 +86,21 @@ export type ContactSubmission = {
   createdAt: string; // ISO
 };
 
+export type ChatFeedback = {
+  id: string;
+  rating: "up" | "down";
+  userQuery: string;
+  assistantReply: string;
+  createdAt: string; // ISO
+};
+
+export type ChatQueryLogEntry = {
+  id: string;
+  query: string;
+  fromSuggestion: boolean;
+  createdAt: string; // ISO
+};
+
 export type FeatureFlagsDocument = {
   values: Record<string, boolean>;
   updatedAt: string;
@@ -342,6 +357,70 @@ export async function addContactSubmission(input: {
     message: row.message,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+// --- Chat feedback (thumbs up/down on assistant replies) ---
+
+export async function readChatFeedback(): Promise<ChatFeedback[]> {
+  try {
+    const rows = await withDbTimeout(prisma.chatFeedback.findMany({ orderBy: { createdAt: "desc" } }));
+    return rows.map((r) => ({
+      id: r.id,
+      rating: r.rating === "up" ? "up" : "down",
+      userQuery: r.userQuery,
+      assistantReply: r.assistantReply,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function addChatFeedback(input: {
+  rating: "up" | "down";
+  userQuery: string;
+  assistantReply: string;
+}): Promise<ChatFeedback> {
+  const row = await prisma.chatFeedback.create({
+    data: {
+      rating: input.rating,
+      userQuery: input.userQuery.trim(),
+      assistantReply: input.assistantReply.trim(),
+    },
+  });
+  return {
+    id: row.id,
+    rating: row.rating === "up" ? "up" : "down",
+    userQuery: row.userQuery,
+    assistantReply: row.assistantReply,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+// --- Chat query log (fire-and-forget; never breaks the caller's chat response) ---
+
+export async function logChatQuery(params: { query: string; fromSuggestion: boolean }): Promise<void> {
+  try {
+    await prisma.chatQueryLog.create({
+      data: { query: params.query, fromSuggestion: params.fromSuggestion },
+    });
+  } catch {
+    /* noop — logging must never break the chat response */
+  }
+}
+
+export async function listChatQueryLog(limit = 200): Promise<ChatQueryLogEntry[]> {
+  try {
+    const rows = await prisma.chatQueryLog.findMany({ orderBy: { createdAt: "desc" }, take: limit });
+    return rows.map((r) => ({
+      id: r.id,
+      query: r.query,
+      fromSuggestion: r.fromSuggestion,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // --- Feature flags ---

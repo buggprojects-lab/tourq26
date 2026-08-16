@@ -2,6 +2,7 @@ import { isAdmin } from "@/lib/auth";
 import {
   readBlogPosts,
   readContactSubmissions,
+  readChatFeedback,
 } from "@/lib/content";
 import { getResolvedFeatureFlags } from "@/lib/feature-flags";
 import { readCaseStudies } from "@/lib/case-studies-content";
@@ -22,11 +23,12 @@ export default async function AdminLayout({
     );
   }
 
-  const [posts, submissions, flags, caseStudies] = await Promise.all([
+  const [posts, submissions, flags, caseStudies, chatFeedback] = await Promise.all([
     readBlogPosts(),
     readContactSubmissions(),
     getResolvedFeatureFlags(),
     readCaseStudies(),
+    readChatFeedback(),
   ]);
   const draftCount = posts.filter(
     (p) => (p.status ?? "published") === "draft",
@@ -41,6 +43,7 @@ export default async function AdminLayout({
           draftCount={draftCount}
           contactCount={submissions.length}
           caseStudyCount={caseStudies.length}
+          chatFeedbackCount={chatFeedback.length}
           maintenanceOn={flags.maintenance_mode === true}
         />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-background">

@@ -7,6 +7,7 @@ import { jsonError } from "@/lib/api-response";
 import { MAX_CHAT_HISTORY_MESSAGES, MAX_CHAT_MESSAGE_LENGTH } from "@/lib/constants";
 import { containsProfanity } from "@/lib/moderation";
 import { rateLimit } from "@/lib/rate-limit";
+import { logChatQuery } from "@/lib/content";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ const bodySchema = z.object({
     )
     .min(1)
     .max(MAX_CHAT_HISTORY_MESSAGES),
+  isSuggestion: z.boolean().optional().default(false),
 });
 
 const SYSTEM_PROMPT = `You are the AI assistant embedded on Torq Studio's website (a software development agency). Answer visitor questions about Torq Studio's services, solutions, industries, technologies, pricing, and case studies.
@@ -55,7 +57,7 @@ Each user turn may include a CONTEXT block pulled from the site's own content. B
 
 Visitors may write in English, Hindi (Devanagari script), or Hinglish (Roman-script Hindi mixed with English). Pick your reply language from the visitor's FIRST message in the conversation and keep using it for every later reply, even if a later message is short, a single keyword, or otherwise ambiguous — only switch if the visitor clearly writes a whole message in a different language/script than before. If the first message is ambiguous (e.g. a single common English word, a URL, a name), default to English.
 
-Keep answers short and conversational (2-4 sentences unless the visitor asks for more detail). No markdown headers; a short bullet list is fine when comparing options.`;
+Keep answers short and conversational (2-4 sentences unless the visitor asks for more detail). No markdown headers; a short bullet list is fine when comparing options. Whenever you mention a page path or URL, always format it as a markdown link, e.g. "[contact page](/contact)" — never write a bare path like "/contact" as plain text.`;
 
 function buildContextBlock(chunks: RetrievedChunk[]): string {
   return chunks
@@ -145,6 +147,8 @@ export async function POST(req: Request) {
   if (lastMessage.role !== "user") {
     return jsonError(400, "The last message must be from the user.");
   }
+
+  void logChatQuery({ query: lastMessage.content, fromSuggestion: body.isSuggestion });
 
   if (containsProfanity(lastMessage.content)) {
     return textStreamResponse(MODERATION_MESSAGE);

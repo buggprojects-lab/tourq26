@@ -11,12 +11,14 @@ export function AdminSidebar({
   draftCount,
   contactCount,
   caseStudyCount,
+  chatFeedbackCount,
   maintenanceOn,
 }: {
   blogCount: number;
   draftCount: number;
   contactCount: number;
   caseStudyCount: number;
+  chatFeedbackCount: number;
   maintenanceOn: boolean;
 }) {
   const pathname = usePathname() || "";
@@ -46,13 +48,21 @@ export function AdminSidebar({
         { href: "/admin/blog", label: "Blog", badge: blogCount },
         { href: "/admin/case-studies", label: "Case studies", badge: caseStudyCount },
         { href: "/admin/testimonials", label: "Testimonials" },
-        { href: "/admin/knowledge-base", label: "Chat knowledge" },
       ],
     },
     {
       id: "inbox",
       label: "INBOX",
       items: [{ href: "/admin/contact", label: "Contact form", badge: contactCount }],
+    },
+    {
+      id: "chatbot",
+      label: "CHATBOT",
+      items: [
+        { href: "/admin/knowledge-base", label: "Chat knowledge" },
+        { href: "/admin/chat-feedback", label: "Chat feedback", badge: chatFeedbackCount },
+        { href: "/admin/chat-logs", label: "Chat logs" },
+      ],
     },
     {
       id: "settings",
