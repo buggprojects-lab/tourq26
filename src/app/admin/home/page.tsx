@@ -18,7 +18,7 @@ export default async function AdminHomePage() {
           { label: "Homepage" },
         ]}
         title="Homepage"
-        description="Hero, services, why-us, case studies intro, closing CTA, and the snapshot section — everything on the homepage except testimonials (Testimonials page) and the case-study cards themselves."
+        description="Hero (with optional image), image slider, offer banner, offers, services, why-us, case studies intro, closing CTA, and the snapshot section — everything on the homepage except testimonials (Testimonials page) and the case-study cards themselves."
       />
       <HomeContentForm initialData={data} />
     </div>

@@ -46,11 +46,19 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: site.keywords?.length ? site.keywords : undefined,
     authors: [{ name: site.siteName, url: siteUrl }],
     creator: site.siteName,
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: { index: true, follow: true },
-    },
+    robots: site.robotsNoIndex
+      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
+      : { index: true, follow: true, googleBot: { index: true, follow: true } },
+    ...(site.googleSiteVerification || site.bingSiteVerification
+      ? {
+          verification: {
+            ...(site.googleSiteVerification ? { google: site.googleSiteVerification } : {}),
+            ...(site.bingSiteVerification
+              ? { other: { "msvalidate.01": site.bingSiteVerification } }
+              : {}),
+          },
+        }
+      : {}),
     openGraph: {
       type: "website",
       locale: "en_US",
@@ -113,6 +121,7 @@ export default async function RootLayout({
     url: siteUrl,
     description: site.defaultDescription,
     areaServed: "Worldwide",
+    logo: brand.logoUrl || `${siteUrl}/opengraph-image`,
     ...(site.sameAs?.length ? { sameAs: site.sameAs } : {}),
   };
 

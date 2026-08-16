@@ -26,10 +26,20 @@ export const PUT = withAdmin(async (request: NextRequest) => {
     twitterTitle: typeof body.twitterTitle === "string" ? body.twitterTitle : current.twitterTitle,
     twitterDescription:
       typeof body.twitterDescription === "string" ? body.twitterDescription : current.twitterDescription,
+    googleSiteVerification:
+      typeof body.googleSiteVerification === "string"
+        ? body.googleSiteVerification.trim()
+        : current.googleSiteVerification,
+    bingSiteVerification:
+      typeof body.bingSiteVerification === "string"
+        ? body.bingSiteVerification.trim()
+        : current.bingSiteVerification,
+    robotsNoIndex: typeof body.robotsNoIndex === "boolean" ? body.robotsNoIndex : current.robotsNoIndex,
   };
   await writeSiteContent(data);
   void logActivity({ entityType: "site", action: "updated", summary: "Updated site & SEO settings" });
   revalidatePath("/");
   revalidatePath("/blog");
+  revalidatePath("/robots.txt");
   return NextResponse.json(data);
 });

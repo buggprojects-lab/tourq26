@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BrandContent } from "@/lib/brand-content";
 import { BRAND_FONTS } from "@/lib/brand-content";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { ADMIN_INPUT_CLASS as inputClass } from "@/components/admin/form-styles";
 
 function Field({
@@ -79,13 +80,25 @@ function ColorField({
   );
 }
 
-export function BrandForm({ initialData }: { initialData: BrandContent }) {
+export function BrandForm({
+  initialData,
+  onChange,
+}: {
+  initialData: BrandContent;
+  /** Fires on every field change so a parent can drive a live preview — save logic stays local. */
+  onChange?: (data: BrandContent) => void;
+}) {
   const router = useRouter();
   const [data, setData] = useState<BrandContent>(initialData);
   const [businessDescription, setBusinessDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    onChange?.(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const update = <K extends keyof BrandContent>(key: K, value: BrandContent[K]) => {
     setSuccess(false);
@@ -111,19 +124,33 @@ export function BrandForm({ initialData }: { initialData: BrandContent }) {
   };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-8 max-w-3xl space-y-10">
+    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-6 max-w-3xl space-y-10">
       <section className="card-flat space-y-4">
-        <h2 className="font-display text-base font-semibold text-foreground">Logo & favicon</h2>
+        <h2 className="display-sm text-foreground">Logo & favicon</h2>
         <p className="text-sm text-muted-foreground">
           Leave blank to keep the current text wordmark and default favicon.
         </p>
-        <Field label="Logo URL" value={data.logoUrl} onChange={(v) => update("logoUrl", v)} placeholder="https://…/logo.svg" />
-        {data.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.logoUrl} alt="" className="h-8 w-auto" />
-        ) : null}
-        <Field label="Dark-mode logo URL (optional)" value={data.logoDarkUrl} onChange={(v) => update("logoDarkUrl", v)} placeholder="https://…/logo-dark.svg" />
-        <Field label="Favicon URL" value={data.faviconUrl} onChange={(v) => update("faviconUrl", v)} placeholder="https://…/favicon.png" />
+        <ImageUploadField
+          label="Logo"
+          value={data.logoUrl}
+          onChange={(v) => update("logoUrl", v)}
+          placeholder="https://…/logo.svg"
+          previewClassName="mt-2 h-8 w-auto object-contain"
+        />
+        <ImageUploadField
+          label="Dark-mode logo (optional)"
+          value={data.logoDarkUrl}
+          onChange={(v) => update("logoDarkUrl", v)}
+          placeholder="https://…/logo-dark.svg"
+          previewClassName="mt-2 h-8 w-auto rounded bg-foreground/90 object-contain p-1"
+        />
+        <ImageUploadField
+          label="Favicon"
+          value={data.faviconUrl}
+          onChange={(v) => update("faviconUrl", v)}
+          placeholder="https://…/favicon.png"
+          previewClassName="mt-2 h-8 w-8 rounded object-contain"
+        />
       </section>
 
       <section className="card-flat space-y-4">

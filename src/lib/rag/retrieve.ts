@@ -17,6 +17,13 @@ type AggregateRawResult = {
   ok?: number;
 };
 
+// gemini-embedding-001 cosine scores sit around 0.79 for completely unrelated content (the
+// embedding space's noise floor) and climb to 0.82+ once a chunk is actually on-topic. Below
+// this, a chunk is closer to "nearest neighbor of nothing" than a real match — including it in
+// CONTEXT makes the model force an answer out of unrelated pages instead of admitting the site
+// doesn't cover the question.
+const MIN_RELEVANCE_SCORE = 0.82;
+
 /** Embeds `query` and runs an Atlas `$vectorSearch` against `KnowledgeChunk.embedding`. */
 export async function retrieveRelevantChunks(query: string, topK = 5): Promise<RetrievedChunk[]> {
   const queryVector = await embedOne(query);
@@ -49,15 +56,17 @@ export async function retrieveRelevantChunks(query: string, topK = 5): Promise<R
   })) as AggregateRawResult;
 
   const batch = raw.cursor?.firstBatch ?? [];
-  return batch.map((doc) => {
-    const d = doc as Record<string, unknown>;
-    return {
-      sourceType: String(d.sourceType ?? ""),
-      sourceId: String(d.sourceId ?? ""),
-      title: String(d.title ?? ""),
-      content: String(d.content ?? ""),
-      url: typeof d.url === "string" ? d.url : null,
-      score: typeof d.score === "number" ? d.score : 0,
-    };
-  });
+  return batch
+    .map((doc) => {
+      const d = doc as Record<string, unknown>;
+      return {
+        sourceType: String(d.sourceType ?? ""),
+        sourceId: String(d.sourceId ?? ""),
+        title: String(d.title ?? ""),
+        content: String(d.content ?? ""),
+        url: typeof d.url === "string" ? d.url : null,
+        score: typeof d.score === "number" ? d.score : 0,
+      };
+    })
+    .filter((chunk) => chunk.score >= MIN_RELEVANCE_SCORE);
 }

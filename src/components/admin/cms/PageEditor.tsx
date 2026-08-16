@@ -297,16 +297,21 @@ export function PageEditor({
     const hasHeading = blocks.some(
       (b) => (b.type === "contentSection" || b.type === "hero") && Boolean(b.heading?.trim()),
     );
-    const hasLink = blocks.some((b) => {
-      if (b.type === "contentSection") return /<a[\s>]/i.test(b.bodyHtml);
-      if (b.type === "cta") return /<a[\s>]/i.test(b.body ?? "");
-      return false;
-    });
+    const rawHtml = blocks
+      .map((b) => {
+        if (b.type === "contentSection") return b.bodyHtml;
+        if (b.type === "cta") return b.body ?? "";
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+    const blockTypesPresent = Array.from(new Set(blocks.map((b) => b.type)));
     return {
       bodyText: extractTextFromCmsBlocks(blocks),
       heroHeading: heroBlock?.type === "hero" ? heroBlock.heading : "",
       hasHeading,
-      hasLink,
+      rawHtml,
+      blockTypesPresent,
     };
   }, [blocks]);
 
@@ -766,7 +771,10 @@ export function PageEditor({
           bodyText={seoAnalysisInput.bodyText}
           heroHeading={seoAnalysisInput.heroHeading}
           hasHeading={seoAnalysisInput.hasHeading}
-          hasLink={seoAnalysisInput.hasLink}
+          rawHtml={seoAnalysisInput.rawHtml}
+          siteUrl={siteUrl}
+          blockTypesPresent={seoAnalysisInput.blockTypesPresent}
+          currentPath={mode === "edit" ? previewPath : undefined}
         />
       </div>
 

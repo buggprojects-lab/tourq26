@@ -20,7 +20,13 @@ export type HeroProps = Pick<
   | "heroTertiaryCtaLabel"
   | "heroTertiaryCtaHref"
   | "heroTags"
->;
+  | "heroImageEnabled"
+  | "heroImageUrl"
+  | "heroImageAlt"
+> & {
+  /** Adds the OfferBanner's height (h-10) to the top padding so it doesn't sit under it. */
+  bannerActive?: boolean;
+};
 
 export default function Hero({
   heroEyebrow,
@@ -33,10 +39,19 @@ export default function Hero({
   heroTertiaryCtaLabel,
   heroTertiaryCtaHref,
   heroTags,
+  heroImageEnabled,
+  heroImageUrl,
+  heroImageAlt,
+  bannerActive = false,
 }: HeroProps) {
+  const showImage = heroImageEnabled && heroImageUrl.trim().length > 0;
   return (
     <section className="hero-band relative">
-      <div className="relative z-10 mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-12 px-4 pt-32 pb-24 sm:px-6 sm:pt-36 sm:pb-28 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:pt-40 lg:pb-32">
+      <div
+        className={`relative z-10 mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-12 px-4 pb-24 sm:px-6 sm:pb-28 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:pb-32 ${
+          bannerActive ? "pt-[10.5rem] sm:pt-[11.5rem] lg:pt-[12.5rem]" : "pt-32 sm:pt-36 lg:pt-40"
+        }`}
+      >
         <div className="lg:col-span-7">
           <p className="mono-eyebrow animate-fade-up text-white/65 opacity-0 animate-delay-1">
             {heroEyebrow}
@@ -72,9 +87,20 @@ export default function Hero({
 
         <div className="lg:col-span-5">
           <div className="animate-scale-in opacity-0 animate-delay-2">
-            <div className="brand-ribbon animate-ribbon">
-              <div className="ribbon-inner" aria-hidden />
-            </div>
+            {showImage ? (
+              <div className="overflow-hidden rounded-[var(--radius-md)] border border-white/10 shadow-2xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={heroImageUrl}
+                  alt={heroImageAlt}
+                  className="aspect-[4/5] w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="brand-ribbon animate-ribbon">
+                <div className="ribbon-inner" aria-hidden />
+              </div>
+            )}
             <div className="mt-5 flex flex-wrap items-center gap-6 text-[12px] text-white/50">
               <span className="mono-eyebrow">SHIP · OPERATE · ADVISE</span>
               <span className="hidden sm:inline">India · MENA · EU overlap</span>

@@ -720,6 +720,9 @@ model SiteSettings {
   organizationJson   Json?
   llmsTxtExtra       String?
   featureFlags       Json?
+  googleSiteVerification String?
+  bingSiteVerification   String?
+  robotsNoIndex          Boolean  @default(false)
   updatedAt          DateTime @updatedAt
 }
 
@@ -787,6 +790,26 @@ model HomePageContent {
   heroTertiaryCtaLabel  String?
   heroTertiaryCtaHref   String?
   heroTags              String[] @default([])
+
+  heroImageEnabled Boolean @default(false)
+  heroImageUrl     String?
+  heroImageAlt     String?
+
+  sliderEnabled Boolean @default(false)
+  sliderHeading String?
+  /// Array of { imageUrl, alt, heading, caption, ctaLabel, ctaHref }
+  sliderItems   Json?
+
+  offerBannerEnabled  Boolean @default(false)
+  offerBannerText     String?
+  offerBannerCtaLabel String?
+  offerBannerCtaHref  String?
+
+  offersEnabled Boolean @default(false)
+  offersHeading String?
+  offersIntro   String?
+  /// Array of { title, description, badge, ctaLabel, ctaHref }
+  offersItems   Json?
 
   servicesEyebrow String?
   servicesHeading String?

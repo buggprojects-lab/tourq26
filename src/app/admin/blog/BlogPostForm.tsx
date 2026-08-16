@@ -11,6 +11,7 @@ import { SerpPreview } from "@/components/admin/SerpPreview";
 import { SocialPreview } from "@/components/admin/SocialPreview";
 import { TagInput } from "@/components/admin/TagInput";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { generateSeoFromContent, stripHtmlToText } from "@/lib/seo-generate";
 
 type Props = {
@@ -571,22 +572,13 @@ export function BlogPostForm({ post, siteUrl, siteName }: Props) {
               </div>
               <TagInput value={tags} onChange={setTags} />
             </SidebarField>
-            <SidebarField label="COVER IMAGE URL">
-              <input
-                type="url"
+            <SidebarField label="COVER IMAGE">
+              <ImageUploadField
                 value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
+                onChange={setCoverImage}
                 placeholder="https://…/cover.jpg"
-                className="text-input text-[13px]"
+                previewClassName="mt-2 aspect-[1200/630] w-full rounded-[var(--radius-sm)] border border-border object-cover"
               />
-              {coverImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={coverImage}
-                  alt=""
-                  className="mt-2 aspect-[1200/630] w-full rounded-[var(--radius-sm)] border border-border object-cover"
-                />
-              ) : null}
             </SidebarField>
           </Card>
 

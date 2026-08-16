@@ -1,26 +1,27 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { readBrandContent } from "@/lib/brand-content";
-import { BrandForm } from "./BrandForm";
+import { readSiteContent } from "@/lib/content";
+import { BrandSeoTabs } from "./BrandSeoTabs";
 import { AdminPageHeader } from "../AdminPageHeader";
 
 export default async function AdminBrandPage() {
   const ok = await isAdmin();
   if (!ok) redirect("/admin");
 
-  const data = await readBrandContent();
+  const [brandData, siteData] = await Promise.all([readBrandContent(), readSiteContent()]);
 
   return (
     <div>
       <AdminPageHeader
         crumbs={[
           { label: "Admin", href: "/admin/dashboard" },
-          { label: "Brand" },
+          { label: "Brand & SEO" },
         ]}
-        title="Brand"
-        description="Logo, favicon, brand colors, typography, and the brand voice used by every AI-generate button in this admin."
+        title="Brand & SEO"
+        description="Logo, colors, typography, and voice, plus the metadata, social cards, and search engine settings that control how the site appears off-site."
       />
-      <BrandForm initialData={data} />
+      <BrandSeoTabs brandData={brandData} siteData={siteData} />
     </div>
   );
 }

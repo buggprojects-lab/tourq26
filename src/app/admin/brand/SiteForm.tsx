@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SiteContent } from "@/lib/content";
-import { SerpPreview } from "@/components/admin/SerpPreview";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 import { ADMIN_INPUT_CLASS } from "@/components/admin/form-styles";
 
@@ -21,12 +20,24 @@ function CharHint({ value, softMax, label }: { value: string; softMax: number; l
   );
 }
 
-export function SiteForm({ initialData }: { initialData: SiteContent }) {
+export function SiteForm({
+  initialData,
+  onChange,
+}: {
+  initialData: SiteContent;
+  /** Fires on every field change so a parent can drive a live preview — save logic stays local. */
+  onChange?: (data: SiteContent) => void;
+}) {
   const router = useRouter();
   const [data, setData] = useState(initialData);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    onChange?.(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const update = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
     setSuccess(false);
@@ -52,13 +63,7 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
   };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-8 max-w-2xl space-y-10">
-      <SerpPreview
-        siteUrl={data.siteUrl}
-        path=""
-        title={data.defaultTitle}
-        description={data.defaultDescription}
-      />
+    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-6 max-w-2xl space-y-10">
 
       <section className="card-flat space-y-4">
         <h2 className="font-display text-base font-semibold text-foreground">Site identity & URL</h2>
@@ -239,6 +244,67 @@ export function SiteForm({ initialData }: { initialData: SiteContent }) {
             className={`${ADMIN_INPUT_CLASS} placeholder:text-muted-foreground`}
           />
         </div>
+      </section>
+
+      <section className="card-flat space-y-4">
+        <h2 className="display-sm text-foreground">Search engine verification & indexing</h2>
+        <p className="text-sm text-muted-foreground">
+          Verification proves domain ownership so you can see indexing, search performance, and manual actions in each
+          console — without them you&apos;re flying blind on how Google actually crawls this site.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-foreground/90">Google Search Console — HTML tag content</label>
+            <input
+              type="text"
+              value={data.googleSiteVerification}
+              onChange={(e) => update("googleSiteVerification", e.target.value)}
+              placeholder="e.g. AbCdEfGhIjKlMnOpQrStUvWxYz…"
+              className={`${ADMIN_INPUT_CLASS} font-mono text-sm placeholder:text-muted-foreground`}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Search Console → Settings → Ownership verification → HTML tag. Paste just the{" "}
+              <code className="rounded bg-muted px-1 font-mono text-[11px]">content=&quot;…&quot;</code> value.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground/90">Bing Webmaster Tools — meta content</label>
+            <input
+              type="text"
+              value={data.bingSiteVerification}
+              onChange={(e) => update("bingSiteVerification", e.target.value)}
+              placeholder="e.g. 1234ABCD5678EFGH…"
+              className={`${ADMIN_INPUT_CLASS} font-mono text-sm placeholder:text-muted-foreground`}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Bing Webmaster Tools → Settings → verification → meta tag option.
+            </p>
+          </div>
+        </div>
+        <label className="flex items-start gap-3 rounded-lg border border-border bg-surface/50 p-3.5">
+          <input
+            type="checkbox"
+            checked={data.robotsNoIndex}
+            onChange={(e) => update("robotsNoIndex", e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+          />
+          <span>
+            <span className="block text-sm font-medium text-foreground/90">
+              Block all search engines from indexing this site
+            </span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Sets a sitewide <code className="rounded bg-muted px-1 font-mono text-[11px]">noindex</code> and disallows
+              all crawling in <code className="rounded bg-muted px-1 font-mono text-[11px]">robots.txt</code>. Turn this
+              on for staging/preview deploys and off before going live — leaving it on by accident is the single most
+              common way a production site vanishes from Google.
+            </span>
+          </span>
+        </label>
+        {data.robotsNoIndex ? (
+          <p className="rounded-md border border-[color:var(--app-destructive)]/40 bg-[color:var(--app-destructive)]/10 px-3 py-2 text-[13px] text-[color:var(--app-destructive)]">
+            This site is currently hidden from search engines.
+          </p>
+        ) : null}
       </section>
 
       <section className="card-flat space-y-4">

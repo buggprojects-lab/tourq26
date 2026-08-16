@@ -16,6 +16,23 @@ export type WhyUsItem = {
   description: string;
 };
 
+export type SlideItem = {
+  imageUrl: string;
+  alt: string;
+  heading: string;
+  caption: string;
+  ctaLabel: string;
+  ctaHref: string;
+};
+
+export type OfferItem = {
+  title: string;
+  description: string;
+  badge: string;
+  ctaLabel: string;
+  ctaHref: string;
+};
+
 export type HomeContent = {
   heroEyebrow: string;
   heroHeading: string;
@@ -27,6 +44,24 @@ export type HomeContent = {
   heroTertiaryCtaLabel: string;
   heroTertiaryCtaHref: string;
   heroTags: string[];
+
+  heroImageEnabled: boolean;
+  heroImageUrl: string;
+  heroImageAlt: string;
+
+  sliderEnabled: boolean;
+  sliderHeading: string;
+  sliderItems: SlideItem[];
+
+  offerBannerEnabled: boolean;
+  offerBannerText: string;
+  offerBannerCtaLabel: string;
+  offerBannerCtaHref: string;
+
+  offersEnabled: boolean;
+  offersHeading: string;
+  offersIntro: string;
+  offersItems: OfferItem[];
 
   servicesEyebrow: string;
   servicesHeading: string;
@@ -69,6 +104,24 @@ function getDefaultHomeContent(): HomeContent {
     heroTertiaryCtaLabel: "See results",
     heroTertiaryCtaHref: "/#case-studies",
     heroTags: ["Mobile apps", "Web platforms", "APIs", "AI workflows", "Consulting"],
+
+    heroImageEnabled: false,
+    heroImageUrl: "",
+    heroImageAlt: "",
+
+    sliderEnabled: false,
+    sliderHeading: "FEATURED WORK",
+    sliderItems: [],
+
+    offerBannerEnabled: false,
+    offerBannerText: "Limited-time: free architecture review with every new engagement booked this month.",
+    offerBannerCtaLabel: "Claim this offer",
+    offerBannerCtaHref: "/contact",
+
+    offersEnabled: false,
+    offersHeading: "Current offers",
+    offersIntro: "Time-boxed ways to start working together with less upfront commitment.",
+    offersItems: [],
 
     servicesEyebrow: "THE TORQ STUDIO PLATFORM",
     servicesHeading: "Services that ship — not roadmaps in PDF.",
@@ -201,6 +254,30 @@ function isWhyUsItemArray(v: unknown): v is WhyUsItem[] {
   );
 }
 
+function isSlideItemArray(v: unknown): v is SlideItem[] {
+  return (
+    Array.isArray(v) &&
+    v.every(
+      (x) =>
+        x &&
+        typeof x === "object" &&
+        typeof (x as SlideItem).imageUrl === "string",
+    )
+  );
+}
+
+function isOfferItemArray(v: unknown): v is OfferItem[] {
+  return (
+    Array.isArray(v) &&
+    v.every(
+      (x) =>
+        x &&
+        typeof x === "object" &&
+        typeof (x as OfferItem).title === "string",
+    )
+  );
+}
+
 export async function readHomeContent(): Promise<HomeContent> {
   return readSingletonSetting(
     () => prisma.homePageContent.findUnique({ where: { key: SINGLETON_KEY } }),
@@ -216,6 +293,24 @@ export async function readHomeContent(): Promise<HomeContent> {
     heroTertiaryCtaLabel: row.heroTertiaryCtaLabel || d.heroTertiaryCtaLabel,
     heroTertiaryCtaHref: row.heroTertiaryCtaHref || d.heroTertiaryCtaHref,
     heroTags: row.heroTags.length ? row.heroTags : d.heroTags,
+
+    heroImageEnabled: row.heroImageEnabled ?? d.heroImageEnabled,
+    heroImageUrl: row.heroImageUrl || d.heroImageUrl,
+    heroImageAlt: row.heroImageAlt || d.heroImageAlt,
+
+    sliderEnabled: row.sliderEnabled ?? d.sliderEnabled,
+    sliderHeading: row.sliderHeading || d.sliderHeading,
+    sliderItems: isSlideItemArray(row.sliderItems) ? row.sliderItems : d.sliderItems,
+
+    offerBannerEnabled: row.offerBannerEnabled ?? d.offerBannerEnabled,
+    offerBannerText: row.offerBannerText || d.offerBannerText,
+    offerBannerCtaLabel: row.offerBannerCtaLabel || d.offerBannerCtaLabel,
+    offerBannerCtaHref: row.offerBannerCtaHref || d.offerBannerCtaHref,
+
+    offersEnabled: row.offersEnabled ?? d.offersEnabled,
+    offersHeading: row.offersHeading || d.offersHeading,
+    offersIntro: row.offersIntro || d.offersIntro,
+    offersItems: isOfferItemArray(row.offersItems) ? row.offersItems : d.offersItems,
 
     servicesEyebrow: row.servicesEyebrow || d.servicesEyebrow,
     servicesHeading: row.servicesHeading || d.servicesHeading,
@@ -259,6 +354,24 @@ export async function writeHomeContent(data: HomeContent): Promise<void> {
     heroTertiaryCtaLabel: data.heroTertiaryCtaLabel,
     heroTertiaryCtaHref: data.heroTertiaryCtaHref,
     heroTags: data.heroTags,
+
+    heroImageEnabled: data.heroImageEnabled,
+    heroImageUrl: data.heroImageUrl,
+    heroImageAlt: data.heroImageAlt,
+
+    sliderEnabled: data.sliderEnabled,
+    sliderHeading: data.sliderHeading,
+    sliderItems: data.sliderItems,
+
+    offerBannerEnabled: data.offerBannerEnabled,
+    offerBannerText: data.offerBannerText,
+    offerBannerCtaLabel: data.offerBannerCtaLabel,
+    offerBannerCtaHref: data.offerBannerCtaHref,
+
+    offersEnabled: data.offersEnabled,
+    offersHeading: data.offersHeading,
+    offersIntro: data.offersIntro,
+    offersItems: data.offersItems,
 
     servicesEyebrow: data.servicesEyebrow,
     servicesHeading: data.servicesHeading,

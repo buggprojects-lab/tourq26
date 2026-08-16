@@ -69,6 +69,12 @@ export type SiteContent = {
   sameAs: string[];
   /** X/Twitter handle without @ (e.g. torqstudio) */
   twitterSite: string;
+  /** Google Search Console HTML meta verification token (content value only, no tag) */
+  googleSiteVerification: string;
+  /** Bing Webmaster Tools meta verification token (content value only, no tag) */
+  bingSiteVerification: string;
+  /** When true, the whole site is blocked from indexing (robots meta + robots.txt) — for staging. */
+  robotsNoIndex: boolean;
 };
 
 export type ContactSubmission = {
@@ -239,6 +245,9 @@ function getDefaultSiteContent(): SiteContent {
     siteName: "Torq Studio",
     sameAs: [],
     twitterSite: "",
+    googleSiteVerification: "",
+    bingSiteVerification: "",
+    robotsNoIndex: false,
   };
 }
 
@@ -264,6 +273,9 @@ export async function readSiteContent(): Promise<SiteContent> {
     siteName: row.siteName || d.siteName,
     sameAs: row.socialProfiles,
     twitterSite: row.twitterHandle || d.twitterSite,
+    googleSiteVerification: row.googleSiteVerification || d.googleSiteVerification,
+    bingSiteVerification: row.bingSiteVerification || d.bingSiteVerification,
+    robotsNoIndex: row.robotsNoIndex ?? d.robotsNoIndex,
   };
 }
 
@@ -281,6 +293,9 @@ export async function writeSiteContent(data: SiteContent): Promise<void> {
     siteName: data.siteName,
     socialProfiles: data.sameAs.map((u) => u.trim()).filter(Boolean),
     twitterHandle: data.twitterSite.replace(/^@/, "").trim(),
+    googleSiteVerification: data.googleSiteVerification.trim(),
+    bingSiteVerification: data.bingSiteVerification.trim(),
+    robotsNoIndex: data.robotsNoIndex,
   };
   await writeSingletonSetting((args) => prisma.siteSettings.upsert(args), payload);
 }

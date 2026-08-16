@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import MarketingHeader from "@/components/MarketingHeader";
 import Hero from "@/components/Hero";
+import OfferBanner from "@/components/OfferBanner";
+import HomeSlider from "@/components/HomeSlider";
+import Offers from "@/components/Offers";
 import WorkGalleryStrip from "@/components/WorkGalleryStrip";
 import TrustBar from "@/components/TrustBar";
 import Services from "@/components/Services";
@@ -54,11 +57,20 @@ export default async function Home() {
     description: site.defaultDescription,
   });
 
+  const bannerActive = home.offerBannerEnabled && Boolean(home.offerBannerText.trim());
+
   return (
     <>
       <JsonLd data={webPageLd} />
       <JsonLd data={servicesLd} />
-      <MarketingHeader />
+      {bannerActive ? (
+        <OfferBanner
+          text={home.offerBannerText}
+          ctaLabel={home.offerBannerCtaLabel}
+          ctaHref={home.offerBannerCtaHref}
+        />
+      ) : null}
+      <MarketingHeader bannerActive={bannerActive} />
       <main>
         <Hero
           heroEyebrow={home.heroEyebrow}
@@ -71,9 +83,17 @@ export default async function Home() {
           heroTertiaryCtaLabel={home.heroTertiaryCtaLabel}
           heroTertiaryCtaHref={home.heroTertiaryCtaHref}
           heroTags={home.heroTags}
+          bannerActive={bannerActive}
+          heroImageEnabled={home.heroImageEnabled}
+          heroImageUrl={home.heroImageUrl}
+          heroImageAlt={home.heroImageAlt}
         />
+        {home.sliderEnabled ? <HomeSlider heading={home.sliderHeading} items={home.sliderItems} /> : null}
         <WorkGalleryStrip />
         <TrustBar />
+        {home.offersEnabled ? (
+          <Offers offersHeading={home.offersHeading} offersIntro={home.offersIntro} offersItems={home.offersItems} />
+        ) : null}
         <Services
           servicesEyebrow={home.servicesEyebrow}
           servicesHeading={home.servicesHeading}

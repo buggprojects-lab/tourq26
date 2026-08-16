@@ -7,6 +7,7 @@ import type { CaseStudy } from "@/lib/case-studies-content";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { TagInput } from "@/components/admin/TagInput";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { stripHtmlToText } from "@/lib/seo-generate";
 import { slugify } from "@/lib/blog-server";
 import { ADMIN_INPUT_CLASS as inputClass } from "@/components/admin/form-styles";
@@ -208,7 +209,13 @@ export function CaseStudyForm({ item }: { item?: CaseStudy }) {
 
       <section className="card-flat space-y-4">
         <h2 className="display-sm text-foreground">Media & dates</h2>
-        <Field label="Cover image URL" value={data.coverImage} onChange={(v) => update("coverImage", v)} placeholder="https://…" />
+        <ImageUploadField
+          label="Cover image"
+          value={data.coverImage}
+          onChange={(v) => update("coverImage", v)}
+          placeholder="https://…"
+          previewClassName="mt-2 aspect-[1200/630] w-full max-w-sm rounded-[var(--radius-sm)] border border-border object-cover"
+        />
         <Field label="Cover image alt text" value={data.coverAlt} onChange={(v) => update("coverAlt", v)} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

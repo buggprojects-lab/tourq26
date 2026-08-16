@@ -209,13 +209,13 @@ export default async function AdminDashboardPage() {
           </p>
         </Link>
         <Link
-          href="/admin/site"
+          href="/admin/brand"
           className="card-flat card-hover block"
         >
           <p className="mono-eyebrow text-muted-foreground">SETTINGS</p>
-          <h3 className="display-sm mt-2 text-foreground">Site & SEO</h3>
+          <h3 className="display-sm mt-2 text-foreground">Brand & SEO</h3>
           <p className="mt-1.5 text-[14px] text-muted-foreground">
-            Default title, description, Open Graph, Twitter card, social URLs.
+            Logo, colors, typography, voice, meta titles, Open Graph, Twitter card, and search console verification.
           </p>
         </Link>
         <Link

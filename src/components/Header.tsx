@@ -16,10 +16,13 @@ export default function Header({
   navLinks = [],
   megaMenus = {},
   logoUrl,
+  bannerActive = false,
 }: {
   navLinks?: NavLink[];
   megaMenus?: NavMegaMenus;
   logoUrl?: string;
+  /** Offsets the header below the fixed OfferBanner (h-10) when one is showing. */
+  bannerActive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -35,7 +38,7 @@ export default function Header({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
+      className={`fixed left-0 right-0 z-50 transition-colors duration-200 ${bannerActive ? "top-10" : "top-0"} ${
         scrolled
           ? "glass-panel"
           : "bg-[var(--brand-canvas-dark)] text-white border-b border-transparent"
