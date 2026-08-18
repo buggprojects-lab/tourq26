@@ -38,8 +38,23 @@ export const PUT = withAdmin(async (request: NextRequest) => {
   };
   await writeSiteContent(data);
   void logActivity({ entityType: "site", action: "updated", summary: "Updated site & SEO settings" });
-  revalidatePath("/");
-  revalidatePath("/blog");
+  // Layout-wide: metadataBase, canonical, and Organization/WebSite JSON-LD all read siteUrl.
+  revalidatePath("/", "layout");
   revalidatePath("/robots.txt");
+  revalidatePath("/sitemap.xml");
+  // Statically generated detail pages bake siteUrl into their own canonical/OG/JSON-LD at
+  // build time — without this they'd keep serving a stale siteUrl until the next deploy.
+  for (const pattern of [
+    "/services/[slug]",
+    "/case-studies/[slug]",
+    "/blog/[slug]",
+    "/industries/[slug]",
+    "/solutions/[slug]",
+    "/technologies/[slug]",
+    "/tech-news/[slug]",
+    "/freebies/[slug]",
+  ]) {
+    revalidatePath(pattern, "page");
+  }
   return NextResponse.json(data);
 });

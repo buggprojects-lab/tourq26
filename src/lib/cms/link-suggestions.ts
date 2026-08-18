@@ -21,11 +21,12 @@ function tokenize(text: string): string[] {
 export type LinkSuggestion = {
   title: string;
   path: string;
+  anchor: string;
   score: number;
   matchedTerms: string[];
 };
 
-type Candidate = { title: string; path: string; tokens: Set<string> };
+type Candidate = { title: string; path: string; anchor: string; tokens: Set<string> };
 
 /**
  * Rule-based internal link suggestions: scores published pages, blog posts, and case
@@ -46,7 +47,7 @@ export async function findInternalLinkSuggestions(input: {
   ]);
   if (queryTokens.size === 0) return [];
 
-  const [pages, blogPosts, caseStudies] = await Promise.all([
+  const [pages, blogPosts, caseStudies, techNewsPosts] = await Promise.all([
     withDbTimeout(
       prisma.page.findMany({
         where: { status: "PUBLISHED" },
@@ -67,23 +68,39 @@ export async function findInternalLinkSuggestions(input: {
         take: 300,
       }),
     ).catch(() => []),
+    withDbTimeout(
+      prisma.techNewsPost.findMany({
+        where: { status: "published" },
+        select: { slug: true, title: true, description: true, focusKeyword: true },
+        take: 300,
+      }),
+    ).catch(() => []),
   ]);
 
   const candidates: Candidate[] = [
     ...pages.map((p) => ({
       title: p.title,
       path: p.path,
+      anchor: (p.seo?.focusKeyword || p.title).trim(),
       tokens: new Set([...tokenize(p.title), ...tokenize(p.excerpt ?? ""), ...tokenize(p.seo?.focusKeyword ?? "")]),
     })),
     ...blogPosts.map((b) => ({
       title: b.title,
       path: `/blog/${b.slug}`,
+      anchor: (b.focusKeyword || b.title).trim(),
       tokens: new Set([...tokenize(b.title), ...tokenize(b.description ?? ""), ...tokenize(b.focusKeyword ?? "")]),
     })),
     ...caseStudies.map((c) => ({
       title: c.title,
       path: `/case-studies/${c.slug}`,
+      anchor: c.title.trim(),
       tokens: new Set([...tokenize(c.title), ...tokenize(c.description ?? ""), ...c.services.flatMap(tokenize)]),
+    })),
+    ...techNewsPosts.map((n) => ({
+      title: n.title,
+      path: `/tech-news/${n.slug}`,
+      anchor: (n.focusKeyword || n.title).trim(),
+      tokens: new Set([...tokenize(n.title), ...tokenize(n.description ?? ""), ...tokenize(n.focusKeyword ?? "")]),
     })),
   ];
 
@@ -91,7 +108,13 @@ export async function findInternalLinkSuggestions(input: {
     .filter((c) => c.path !== input.excludePath)
     .map((c) => {
       const matchedTerms = Array.from(new Set([...c.tokens].filter((t) => queryTokens.has(t))));
-      return { title: c.title, path: c.path, score: matchedTerms.length, matchedTerms: matchedTerms.slice(0, 4) };
+      return {
+        title: c.title,
+        path: c.path,
+        anchor: c.anchor,
+        score: matchedTerms.length,
+        matchedTerms: matchedTerms.slice(0, 4),
+      };
     })
     .filter((c) => c.score > 0)
     .sort((a, b) => b.score - a.score)

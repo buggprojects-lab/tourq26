@@ -18,6 +18,12 @@ export const contentSectionBlockSchema = z.object({
   eyebrow: z.string().optional(),
   heading: z.string().optional(),
   bodyHtml: z.string().min(1),
+  image: z
+    .object({
+      url: z.string().min(1),
+      alt: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const faqBlockSchema = z.object({
@@ -80,7 +86,7 @@ export const BLOCK_TYPE_OPTIONS: { type: BlockTypeKey; label: string }[] = [
   { type: "cta", label: "CTA" },
 ];
 
-export function createDefaultBlock(type: BlockTypeKey): CmsBlock {
+export function createDefaultBlock(type: BlockTypeKey, existingBlocks: CmsBlock[] = []): CmsBlock {
   const id = `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   switch (type) {
     case "hero":
@@ -95,14 +101,17 @@ export function createDefaultBlock(type: BlockTypeKey): CmsBlock {
         secondaryCtaLabel: "Case studies",
         secondaryCtaHref: "/case-studies",
       };
-    case "contentSection":
+    case "contentSection": {
+      const sectionNumber =
+        existingBlocks.filter((b) => b.type === "contentSection").length + 1;
       return {
         type,
         id,
-        eyebrow: "01 · SECTION",
+        eyebrow: `${String(sectionNumber).padStart(2, "0")} · SECTION`,
         heading: "Section heading",
         bodyHtml: "<p>Write the body copy here.</p>",
       };
+    }
     case "featureGrid":
       return {
         type,

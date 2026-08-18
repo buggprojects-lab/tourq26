@@ -11,6 +11,7 @@ export function AdminSidebar({
   draftCount,
   contactCount,
   caseStudyCount,
+  techNewsCount,
   chatFeedbackCount,
   newLeadCount,
   maintenanceOn,
@@ -19,6 +20,7 @@ export function AdminSidebar({
   draftCount: number;
   contactCount: number;
   caseStudyCount: number;
+  techNewsCount: number;
   chatFeedbackCount: number;
   newLeadCount: number;
   maintenanceOn: boolean;
@@ -49,6 +51,7 @@ export function AdminSidebar({
       items: [
         { href: "/admin/blog", label: "Blog", badge: blogCount },
         { href: "/admin/case-studies", label: "Case studies", badge: caseStudyCount },
+        { href: "/admin/tech-news", label: "Tech news", badge: techNewsCount },
         { href: "/admin/testimonials", label: "Testimonials" },
       ],
     },

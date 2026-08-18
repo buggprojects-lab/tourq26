@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,14 +9,17 @@ import {
   type BlockTypeKey,
   type CmsBlock,
 } from "@/lib/cms/blocks";
+import type { LinkSuggestion } from "@/lib/cms/link-suggestions";
 import {
   extractTextFromCmsBlocks,
   generateSeoFromContent,
 } from "@/lib/seo-generate";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { SerpPreview } from "@/components/admin/SerpPreview";
 import { AiGenerateButton } from "@/components/admin/AiGenerateButton";
 import { SeoAnalysisSidebar } from "@/components/admin/cms/SeoAnalysisSidebar";
+import { SuggestedLinksBar } from "@/components/admin/cms/SuggestedLinksBar";
 
 type PageEditorProps = {
   mode: "create" | "edit";
@@ -283,6 +286,21 @@ export function PageEditor({
     });
   }
 
+  function insertLinkSuggestion(suggestion: LinkSuggestion) {
+    setBlocks((prev) => {
+      const targetIndex = prev.map((b) => b.type).lastIndexOf("contentSection");
+      if (targetIndex < 0) return prev;
+      const target = prev[targetIndex];
+      if (target.type !== "contentSection") return prev;
+      const next = [...prev];
+      next[targetIndex] = {
+        ...target,
+        bodyHtml: `${target.bodyHtml}<p><a href="${suggestion.path}">${suggestion.anchor}</a></p>`,
+      };
+      return next;
+    });
+  }
+
   function toggleCollapsed(id: string) {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
@@ -314,6 +332,37 @@ export function PageEditor({
       blockTypesPresent,
     };
   }, [blocks]);
+
+  const [linkSuggestions, setLinkSuggestions] = useState<LinkSuggestion[] | null>(null);
+  const [linkSuggestionsLoading, setLinkSuggestionsLoading] = useState(false);
+  const effectiveFocusKeyword = focusKeyword || targetKeyword;
+  const { bodyText } = seoAnalysisInput;
+
+  useEffect(() => {
+    if (!effectiveFocusKeyword.trim() && bodyText.trim().length < 20) {
+      setLinkSuggestions(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setLinkSuggestionsLoading(true);
+      const params = new URLSearchParams({
+        focusKeyword: effectiveFocusKeyword,
+        secondary: secondaryKeywords,
+        bodyText: bodyText.slice(0, 1000),
+        ...(mode === "edit" && previewPath ? { excludePath: previewPath } : {}),
+      });
+      fetch(`/api/admin/cms/link-suggestions?${params.toString()}`, { signal: controller.signal })
+        .then((r) => r.json())
+        .then((data) => setLinkSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
+        .catch(() => {})
+        .finally(() => setLinkSuggestionsLoading(false));
+    }, 600);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [effectiveFocusKeyword, secondaryKeywords, bodyText, previewPath, mode]);
 
   return (
     <div className="space-y-8">
@@ -478,7 +527,7 @@ export function PageEditor({
             <button
               type="button"
               className="btn-base btn-secondary"
-              onClick={() => setBlocks((prev) => [...prev, createDefaultBlock(addType)])}
+              onClick={() => setBlocks((prev) => [...prev, createDefaultBlock(addType, prev)])}
             >
               Add block
             </button>
@@ -774,13 +823,18 @@ export function PageEditor({
           rawHtml={seoAnalysisInput.rawHtml}
           siteUrl={siteUrl}
           blockTypesPresent={seoAnalysisInput.blockTypesPresent}
-          currentPath={mode === "edit" ? previewPath : undefined}
         />
       </div>
 
       </div>
 
-      <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-5 py-4 backdrop-blur lg:-mx-8 lg:px-8">
+      <div className="sticky bottom-0 z-10 -mx-5 border-t border-border bg-background/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <SuggestedLinksBar
+          suggestions={linkSuggestions}
+          loading={linkSuggestionsLoading}
+          onInsert={insertLinkSuggestion}
+        />
+        <div className="flex flex-wrap items-center gap-3 py-4">
         <button
           type="button"
           className="btn-base btn-primary"
@@ -805,6 +859,7 @@ export function PageEditor({
         {savedNotice ? (
           <span className="mono-label text-muted-foreground">{savedNotice}</span>
         ) : null}
+        </div>
       </div>
     </div>
   );
@@ -929,6 +984,23 @@ function BlockFields({
               minHeight="12rem"
             />
           </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ImageUploadField
+            label="Image (optional)"
+            value={block.image?.url ?? ""}
+            onChange={(url) =>
+              onChange({ image: url ? { url, alt: block.image?.alt ?? "" } : undefined })
+            }
+            helpText="Shown on the right side of this section, next to the body text."
+          />
+          <Field
+            label="Image alt text"
+            value={block.image?.alt ?? ""}
+            onChange={(alt) =>
+              onChange({ image: block.image?.url ? { ...block.image, alt } : block.image })
+            }
+          />
         </div>
       </div>
     );

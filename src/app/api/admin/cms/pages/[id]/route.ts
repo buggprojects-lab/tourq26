@@ -31,6 +31,8 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: Ctx) => {
     if (page?.path) {
       revalidatePath(page.path);
       revalidatePath("/sitemap.xml");
+      // A SERVICE page's publish state gates whether its entity card is listed on /services.
+      if (page.type === "SERVICE") revalidatePath("/services");
     }
     return NextResponse.json(page);
   }
@@ -50,6 +52,7 @@ export const PATCH = withAdmin(async (request: NextRequest, ctx: Ctx) => {
     if (page?.status === "PUBLISHED" && page.path) {
       revalidatePath(page.path);
       revalidatePath("/sitemap.xml");
+      if (page.type === "SERVICE") revalidatePath("/services");
     }
     return NextResponse.json(page);
   }
@@ -92,5 +95,6 @@ export const DELETE = withAdmin(async (_request: NextRequest, ctx: Ctx) => {
   void logActivity({ entityType: "cms-page", entityId: id, action: "deleted", summary: `Deleted CMS page "${page.title}"` });
   revalidatePath("/admin/cms/pages");
   if (page.path) revalidatePath(page.path);
+  if (page.type === "SERVICE") revalidatePath("/services");
   return NextResponse.json({ ok: true });
 });

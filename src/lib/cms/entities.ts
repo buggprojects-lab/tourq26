@@ -109,6 +109,77 @@ export async function listEntities(kind: EntityKind) {
   }
 }
 
+type EntityDelegate = {
+  create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+  update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<unknown>;
+  delete: (args: { where: { id: string } }) => Promise<unknown>;
+};
+
+function entityDelegate(kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY"): EntityDelegate {
+  switch (kind) {
+    case "SERVICE":
+      return prisma.service as unknown as EntityDelegate;
+    case "SOLUTION":
+      return prisma.solution as unknown as EntityDelegate;
+    case "INDUSTRY":
+      return prisma.industry as unknown as EntityDelegate;
+    case "TECHNOLOGY":
+      return prisma.technology as unknown as EntityDelegate;
+  }
+}
+
+export type EntityInput = {
+  name: string;
+  slug?: string;
+  summary?: string | null;
+  description?: string | null;
+  icon?: string | null;
+  category?: string | null;
+  sortOrder?: number;
+};
+
+export async function createEntity(
+  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  input: EntityInput,
+) {
+  const slug = slugify(input.slug?.trim() || input.name);
+  if (!slug) throw new Error("Name or slug is required");
+  return entityDelegate(kind).create({
+    data: {
+      slug,
+      name: input.name.trim(),
+      summary: input.summary?.trim() || null,
+      description: input.description?.trim() || null,
+      icon: input.icon?.trim() || null,
+      category: input.category?.trim() || null,
+      sortOrder: input.sortOrder ?? 0,
+    },
+  });
+}
+
+export async function updateEntity(
+  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  id: string,
+  input: Partial<EntityInput>,
+) {
+  const data: Record<string, unknown> = {};
+  if (input.name !== undefined) data.name = input.name.trim();
+  if (input.slug !== undefined) data.slug = slugify(input.slug);
+  if (input.summary !== undefined) data.summary = input.summary?.trim() || null;
+  if (input.description !== undefined) data.description = input.description?.trim() || null;
+  if (input.icon !== undefined) data.icon = input.icon?.trim() || null;
+  if (input.category !== undefined) data.category = input.category?.trim() || null;
+  if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
+  return entityDelegate(kind).update({ where: { id }, data });
+}
+
+export async function deleteEntity(
+  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  id: string,
+) {
+  return entityDelegate(kind).delete({ where: { id } });
+}
+
 export async function upsertEntityRelation(input: {
   fromKind: EntityKind;
   fromId: string;

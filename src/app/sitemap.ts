@@ -3,7 +3,7 @@ import { publishedBlogPosts, readBlogPosts } from "@/lib/content";
 import { readCaseStudies } from "@/lib/case-studies-content";
 import { freebies } from "@/data/freebies";
 import { servicePages } from "@/data/services-content";
-import { techNewsDemoItems } from "@/data/tech-news-demo";
+import { publishedTechNewsPosts, readTechNewsPosts } from "@/lib/tech-news-content";
 import { getSiteUrl } from "@/lib/site-url";
 
 function priorityForCmsType(type: string): number {
@@ -30,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (await getSiteUrl()).replace(/\/$/, "");
   const blogPosts = publishedBlogPosts(await readBlogPosts());
   const caseStudies = await readCaseStudies();
+  const techNewsPosts = publishedTechNewsPosts(await readTechNewsPosts());
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -68,9 +69,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  const techNewsUrls: MetadataRoute.Sitemap = techNewsDemoItems.map((item) => ({
+  const techNewsUrls: MetadataRoute.Sitemap = techNewsPosts.map((item) => ({
     url: `${baseUrl}/tech-news/${item.slug}`,
-    lastModified: new Date(item.datePublished),
+    lastModified: new Date(item.dateUpdated ?? item.date),
     changeFrequency: "weekly" as const,
     priority: 0.72,
   }));

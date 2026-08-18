@@ -27,6 +27,10 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+// Safety net: on-demand revalidation (revalidatePath("/", "layout")) covers site-setting
+// edits, but this bounds staleness to an hour even if that call is ever missed.
+export const revalidate = 3600;
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   analyzePageSeo,
   summarizeSeoChecks,
@@ -8,7 +7,6 @@ import {
   type SeoCheckCategory,
   type SeoCheckStatus,
 } from "@/lib/seo-analysis";
-import type { LinkSuggestion } from "@/lib/cms/link-suggestions";
 
 function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -85,15 +83,6 @@ function TextIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function SparkleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M12 2.5c.3 3 1.6 5.6 4 7.5-2.4 1.9-3.7 4.5-4 7.5-.3-3-1.6-5.6-4-7.5 2.4-1.9 3.7-4.5 4-7.5Z" />
-      <path d="M19.5 14c.15 1.4.8 2.6 1.9 3.5-1.1.9-1.75 2.1-1.9 3.5-.15-1.4-.8-2.6-1.9-3.5 1.1-.9 1.75-2.1 1.9-3.5Z" />
-    </svg>
-  );
-}
-
 const STATUS_STYLE: Record<
   SeoCheckStatus,
   { icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; text: string; bg: string; border: string; dot: string }
@@ -153,7 +142,6 @@ export function SeoAnalysisSidebar({
   rawHtml,
   siteUrl,
   blockTypesPresent,
-  currentPath,
 }: {
   title: string;
   slug: string;
@@ -167,7 +155,6 @@ export function SeoAnalysisSidebar({
   rawHtml: string;
   siteUrl?: string;
   blockTypesPresent: string[];
-  currentPath?: string;
 }) {
   const checks = analyzePageSeo({
     title,
@@ -186,36 +173,6 @@ export function SeoAnalysisSidebar({
   const summary = summarizeSeoChecks(checks);
   const summaryStyle = STATUS_STYLE[summary.status];
   const SummaryIcon = summaryStyle.icon;
-
-  const [suggestions, setSuggestions] = useState<LinkSuggestion[] | null>(null);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const secondaryKey = secondaryKeywords.join(",");
-
-  useEffect(() => {
-    if (!focusKeyword.trim() && bodyText.trim().length < 20) {
-      setSuggestions(null);
-      return;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      setSuggestionsLoading(true);
-      const params = new URLSearchParams({
-        focusKeyword,
-        secondary: secondaryKey,
-        bodyText: bodyText.slice(0, 1000),
-        ...(currentPath ? { excludePath: currentPath } : {}),
-      });
-      fetch(`/api/admin/cms/link-suggestions?${params.toString()}`, { signal: controller.signal })
-        .then((r) => r.json())
-        .then((data) => setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
-        .catch(() => {})
-        .finally(() => setSuggestionsLoading(false));
-    }, 600);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [focusKeyword, secondaryKey, bodyText, currentPath]);
 
   return (
     <div className="card-flat space-y-5">
@@ -277,42 +234,6 @@ export function SeoAnalysisSidebar({
             </div>
           );
         })}
-      </div>
-
-      <div>
-        <p className="mono-label mb-2 flex items-center gap-1.5 text-muted-foreground">
-          <SparkleIcon className="h-3.5 w-3.5 text-primary" aria-hidden /> Suggested internal links
-        </p>
-        {suggestionsLoading ? (
-          <p className="text-[13px] text-muted-foreground">Scanning published content…</p>
-        ) : !suggestions || suggestions.length === 0 ? (
-          <p className="text-[13px] text-muted-foreground">
-            Add a focus keyword or body copy to get automatic internal-link suggestions from your published pages,
-            blog posts, and case studies.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {suggestions.map((s) => (
-              <li
-                key={s.path}
-                className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5"
-              >
-                <div className="flex items-start gap-2">
-                  <LinkIcon className="mt-0.5 h-[15px] w-[15px] shrink-0 text-primary" aria-hidden />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{s.title}</p>
-                    <p className="mt-0.5 truncate font-mono text-[12px] text-muted-foreground">{s.path}</p>
-                    {s.matchedTerms.length > 0 ? (
-                      <p className="mt-1 text-[12px] text-muted-foreground">
-                        Matches: {s.matchedTerms.join(", ")}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </div>
   );

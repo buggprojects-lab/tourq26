@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { CmsBlock } from "@/lib/cms/blocks";
 import { sanitizeBlogHtml } from "@/lib/blog-sanitize";
@@ -71,19 +72,38 @@ export function BlockRenderer({ blocks }: { blocks: CmsBlock[] }) {
             return (
               <section key={block.id} className="band-light border-t border-hairline">
                 <div className="mx-auto w-full max-w-[1280px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-[80px]">
-                  <div className="max-w-[680px]">
-                    {block.eyebrow ? (
-                      <p className="mono-eyebrow text-muted-foreground">{block.eyebrow}</p>
+                  <div
+                    className={
+                      block.image
+                        ? "grid gap-10 lg:grid-cols-12 lg:items-start"
+                        : "max-w-[680px]"
+                    }
+                  >
+                    <div className={block.image ? "lg:col-span-6" : undefined}>
+                      {block.eyebrow ? (
+                        <p className="mono-eyebrow text-muted-foreground">{block.eyebrow}</p>
+                      ) : null}
+                      {block.heading ? (
+                        <h2 className="display-lg mt-4 text-foreground">{block.heading}</h2>
+                      ) : null}
+                      <div
+                        className="blog-article mt-5 max-w-none"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeBlogHtml(block.bodyHtml),
+                        }}
+                      />
+                    </div>
+                    {block.image ? (
+                      <figure className="relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-sm)] border border-hairline lg:col-span-6">
+                        <Image
+                          src={block.image.url}
+                          alt={block.image.alt || ""}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                        />
+                      </figure>
                     ) : null}
-                    {block.heading ? (
-                      <h2 className="display-lg mt-4 text-foreground">{block.heading}</h2>
-                    ) : null}
-                    <div
-                      className="blog-article mt-5 max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeBlogHtml(block.bodyHtml),
-                      }}
-                    />
                   </div>
                 </div>
               </section>

@@ -802,6 +802,26 @@ model CaseStudyPost {
   sortOrder   Int      @default(0)
 }
 
+model TechNewsPost {
+  id           String   @id @default(cuid()) @map("_id")
+  slug         String   @unique
+  title        String
+  seoTitle     String?
+  dek          String
+  category     String
+  description  String
+  excerpt      String?
+  date         String
+  dateUpdated  String?
+  readTime     String
+  body         String
+  authorName   String?
+  status       String   @default("published")
+  coverImage   String?
+  focusKeyword String?
+  wordCount    Int?
+}
+
 model HomePageContent {
   id  String @id @default(cuid()) @map("_id")
   key String @unique @default("default")

@@ -6,6 +6,7 @@ import {
 } from "@/lib/content";
 import { getResolvedFeatureFlags } from "@/lib/feature-flags";
 import { readCaseStudies } from "@/lib/case-studies-content";
+import { readTechNewsPosts } from "@/lib/tech-news-content";
 import { countNewAuditLeads } from "@/lib/audit-leads-content";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopBar } from "./AdminTopBar";
@@ -24,11 +25,12 @@ export default async function AdminLayout({
     );
   }
 
-  const [posts, submissions, flags, caseStudies, chatFeedback, newLeadCount] = await Promise.all([
+  const [posts, submissions, flags, caseStudies, techNewsPosts, chatFeedback, newLeadCount] = await Promise.all([
     readBlogPosts(),
     readContactSubmissions(),
     getResolvedFeatureFlags(),
     readCaseStudies(),
+    readTechNewsPosts(),
     readChatFeedback(),
     countNewAuditLeads(),
   ]);
@@ -45,6 +47,7 @@ export default async function AdminLayout({
           draftCount={draftCount}
           contactCount={submissions.length}
           caseStudyCount={caseStudies.length}
+          techNewsCount={techNewsPosts.length}
           chatFeedbackCount={chatFeedback.length}
           newLeadCount={newLeadCount}
           maintenanceOn={flags.maintenance_mode === true}
