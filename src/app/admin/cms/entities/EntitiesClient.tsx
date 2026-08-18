@@ -65,28 +65,6 @@ export function EntitiesClient({
   const [addingNew, setAddingNew] = useState(false);
   const [newForm, setNewForm] = useState<FormState>(EMPTY_FORM);
 
-  async function seed() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const res = await fetch("/api/admin/cms/entities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "seed" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Seed failed");
-      setMessage(
-        `Seeded ${data.counts.services} services, ${data.counts.solutions} solutions, ${data.counts.industries} industries, ${data.counts.technologies} technologies.`,
-      );
-      router.refresh();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Seed failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function ensurePage(
     kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
     slug: string,
@@ -208,19 +186,9 @@ export function EntitiesClient({
 
   return (
     <div className="mt-8 space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          className="btn-base btn-primary"
-          disabled={busy}
-          onClick={() => void seed()}
-        >
-          {busy ? "Working…" : "Seed IA entities"}
-        </button>
-        {message ? (
-          <p className="text-sm text-muted-foreground">{message}</p>
-        ) : null}
-      </div>
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {(

@@ -7,7 +7,6 @@ import {
   deleteEntity,
   ensureEntityPage,
   listEntities,
-  seedCmsEntities,
   updateEntity,
   type EntityInput,
 } from "@/lib/cms/entities";
@@ -54,13 +53,6 @@ export const POST = withAdmin(async (request: NextRequest) => {
     kind?: EntityKind;
     slug?: string;
   };
-
-  if (body.action === "seed") {
-    const counts = await seedCmsEntities();
-    void logActivity({ entityType: "cms-entities", action: "created", summary: "Seeded CMS entities" });
-    for (const path of Object.values(HUB_PATH)) revalidatePath(path);
-    return NextResponse.json({ ok: true, counts });
-  }
 
   if (body.action === "ensure-page" && body.kind && body.slug) {
     if (!["SERVICE", "SOLUTION", "INDUSTRY", "TECHNOLOGY"].includes(body.kind)) {

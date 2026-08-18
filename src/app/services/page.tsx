@@ -4,10 +4,13 @@ import Image from "next/image";
 import MarketingHeader from "@/components/MarketingHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
+import { BlockRenderer } from "@/components/cms/BlockRenderer";
 import { getSiteUrl } from "@/lib/site-url";
 import { breadcrumbListJsonLd, webPageJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
-import { getServiceCatalogCards } from "@/lib/services-catalog";
+import { getEntityCatalogCards } from "@/lib/entity-catalog";
+import { getPublishedPageByPath, getPageBlocks } from "@/lib/cms/pages";
+import { buildPageJsonLd, buildPageMetadata } from "@/lib/cms/metadata";
 
 // Safety net: on-demand revalidation covers CMS/entity edits, but this bounds staleness
 // to an hour even if a revalidatePath call is ever missed.
@@ -15,6 +18,14 @@ export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getSiteUrl();
+
+  try {
+    const cms = await getPublishedPageByPath("/services");
+    if (cms) return buildPageMetadata(cms, baseUrl);
+  } catch {
+    /* DB unavailable — fall back */
+  }
+
   return {
     title: "Services",
     description:
@@ -31,7 +42,30 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ServicesIndexPage() {
-  const [siteUrl, catalog] = await Promise.all([getSiteUrl(), getServiceCatalogCards()]);
+  try {
+    const cms = await getPublishedPageByPath("/services");
+    if (cms) {
+      const siteUrl = await getSiteUrl();
+      const schemas = buildPageJsonLd(cms, siteUrl);
+      const blocks = getPageBlocks(cms);
+      return (
+        <div className="min-h-screen bg-background">
+          {schemas.map((data, i) => (
+            <JsonLd key={i} data={data} />
+          ))}
+          <MarketingHeader />
+          <main>
+            <BlockRenderer blocks={blocks} />
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+  } catch {
+    /* fall through to static */
+  }
+
+  const [siteUrl, catalog] = await Promise.all([getSiteUrl(), getEntityCatalogCards("SERVICE")]);
   const breadcrumbLd = breadcrumbListJsonLd(siteUrl, [
     { name: "Home", path: "/" },
     { name: "Services", path: "/services" },

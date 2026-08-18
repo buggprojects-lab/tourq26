@@ -83,6 +83,8 @@ function blockSummary(block: CmsBlock): string {
       return `${block.items.length} question${block.items.length === 1 ? "" : "s"}`;
     case "featureGrid":
       return `${block.items.length} feature${block.items.length === 1 ? "" : "s"}`;
+    case "entityGrid":
+      return `${block.kind.toLowerCase()} catalogue`;
     default:
       return "";
   }
@@ -1063,6 +1065,37 @@ function BlockFields({
           />
           Dark band
         </label>
+      </div>
+    );
+  }
+
+  if (block.type === "entityGrid") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          <span className="mono-label text-muted-foreground">Catalogue</span>
+          <select
+            className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2"
+            value={block.kind}
+            onChange={(e) => onChange({ kind: e.target.value as typeof block.kind })}
+          >
+            <option value="SERVICE">Services</option>
+            <option value="SOLUTION">Solutions</option>
+            <option value="INDUSTRY">Industries</option>
+            <option value="TECHNOLOGY">Technologies</option>
+          </select>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Cards are pulled live from Admin → CMS → Entities — only entries with a
+            published page show up.
+          </span>
+        </label>
+        <Field label="Eyebrow" value={block.eyebrow ?? ""} onChange={(v) => onChange({ eyebrow: v })} />
+        <Field
+          label="Heading"
+          value={block.heading ?? ""}
+          onChange={(v) => onChange({ heading: v })}
+          className="sm:col-span-2"
+        />
       </div>
     );
   }
