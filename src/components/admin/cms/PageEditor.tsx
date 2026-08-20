@@ -53,6 +53,7 @@ const PAGE_TYPES = [
   "SOLUTION",
   "INDUSTRY",
   "TECHNOLOGY",
+  "LOCATION",
   "LANDING",
   "COMPANY",
   "CUSTOM",
@@ -192,7 +193,7 @@ export function PageEditor({
         focusKeyword,
         robotsIndex,
         robotsFollow,
-        schemaKeys: type === "SERVICE" ? ["Service", "FAQPage"] : [],
+        schemaKeys: type === "SERVICE" || type === "LOCATION" ? ["Service", "FAQPage"] : [],
       },
       brief: {
         targetKeyword: targetKeyword || focusKeyword,

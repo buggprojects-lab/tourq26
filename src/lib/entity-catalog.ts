@@ -1,7 +1,7 @@
 import { prisma, withDbTimeout } from "@/lib/db";
 import { servicePages } from "@/data/services-content";
 
-export type EntityCatalogKind = "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY";
+export type EntityCatalogKind = "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY" | "LOCATION";
 
 export type EntityCatalogCard = {
   slug: string;
@@ -16,6 +16,7 @@ export const ENTITY_HUB_PATH: Record<EntityCatalogKind, string> = {
   SOLUTION: "/solutions",
   INDUSTRY: "/industries",
   TECHNOLOGY: "/technologies",
+  LOCATION: "/locations",
 };
 
 const FALLBACK_ICON: Record<string, string> = {
@@ -71,6 +72,8 @@ function entityDelegate(kind: EntityCatalogKind): EntityDelegate {
       return prisma.industry as unknown as EntityDelegate;
     case "TECHNOLOGY":
       return prisma.technology as unknown as EntityDelegate;
+    case "LOCATION":
+      return prisma.location as unknown as EntityDelegate;
   }
 }
 

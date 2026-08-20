@@ -13,6 +13,7 @@ function priorityForCmsType(type: string): number {
       return 0.85;
     case "INDUSTRY":
     case "TECHNOLOGY":
+    case "LOCATION":
       return 0.8;
     case "CASE_STUDY":
       return 0.75;

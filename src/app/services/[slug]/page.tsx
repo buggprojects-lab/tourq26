@@ -8,7 +8,7 @@ import { BlockRenderer } from "@/components/cms/BlockRenderer";
 import { getServicePage, servicePages } from "@/data/services-content";
 import { publishedBlogPosts, readBlogPosts, readSiteContent } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site-url";
-import { breadcrumbListJsonLd, faqPageJsonLd, webPageJsonLd } from "@/lib/seo";
+import { breadcrumbListJsonLd, faqPageJsonLd, serviceJsonLd, webPageJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
 import { ServiceSectionNav } from "@/components/marketing/ServiceSectionNav";
 import { RelatedContentSection } from "@/components/marketing/RelatedContentSection";
@@ -65,8 +65,8 @@ export default async function ServiceDetailPage({
   try {
     const cms = await getPublishedPageByPath(`/services/${slug}`);
     if (cms) {
-      const siteUrl = await getSiteUrl();
-      const schemas = buildPageJsonLd(cms, siteUrl);
+      const [siteUrl, site] = await Promise.all([getSiteUrl(), readSiteContent()]);
+      const schemas = buildPageJsonLd(cms, siteUrl, site.siteName);
       const blocks = getPageBlocks(cms);
       const relatedGroups = await getRelatedContentGroups({ path: cms.path });
       return (
@@ -90,8 +90,9 @@ export default async function ServiceDetailPage({
   const page = getServicePage(slug);
   if (!page) notFound();
 
-  const [siteUrl, allPosts, relatedGroups] = await Promise.all([
+  const [siteUrl, site, allPosts, relatedGroups] = await Promise.all([
     getSiteUrl(),
+    readSiteContent(),
     readBlogPosts(),
     getRelatedContentGroups({ path: `/services/${page.slug}` }),
   ]);
@@ -118,12 +119,20 @@ export default async function ServiceDetailPage({
     name: `${page.title} | Torq Studio`,
     description: page.description,
   });
+  const serviceLd = serviceJsonLd({
+    siteUrl,
+    path: `/services/${page.slug}`,
+    name: page.title,
+    description: page.description,
+    siteName: site.siteName,
+  });
 
   return (
     <div className="min-h-screen bg-background">
       <JsonLd data={faqLd} />
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={webLd} />
+      <JsonLd data={serviceLd} />
       <MarketingHeader />
       <main>
         <section className="hero-band">

@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 import { getEntityCatalogCards, ENTITY_HUB_PATH, type EntityCatalogKind } from "@/lib/entity-catalog";
 
-function pathPrefix(kind: "SOLUTION" | "INDUSTRY" | "TECHNOLOGY") {
+function pathPrefix(kind: "SOLUTION" | "INDUSTRY" | "TECHNOLOGY" | "LOCATION") {
   return ENTITY_HUB_PATH[kind];
 }
 

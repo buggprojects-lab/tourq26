@@ -12,7 +12,7 @@ import {
 } from "@/lib/cms/entities";
 import { logActivity } from "@/lib/activity-log";
 
-const ENTITY_KIND_VALUES = ["SERVICE", "SOLUTION", "INDUSTRY", "TECHNOLOGY"] as const;
+const ENTITY_KIND_VALUES = ["SERVICE", "SOLUTION", "INDUSTRY", "TECHNOLOGY", "LOCATION"] as const;
 type CrudEntityKind = (typeof ENTITY_KIND_VALUES)[number];
 
 function isCrudKind(kind: unknown): kind is CrudEntityKind {
@@ -29,18 +29,20 @@ const HUB_PATH: Record<CrudEntityKind, string> = {
   SOLUTION: "/solutions",
   INDUSTRY: "/industries",
   TECHNOLOGY: "/technologies",
+  LOCATION: "/locations",
 };
 
 export const GET = withAdmin(async (request: NextRequest) => {
   const kind = new URL(request.url).searchParams.get("kind") as EntityKind | null;
   if (!kind) {
-    const [services, solutions, industries, technologies] = await Promise.all([
+    const [services, solutions, industries, technologies, locations] = await Promise.all([
       listEntities("SERVICE"),
       listEntities("SOLUTION"),
       listEntities("INDUSTRY"),
       listEntities("TECHNOLOGY"),
+      listEntities("LOCATION"),
     ]);
-    return NextResponse.json({ services, solutions, industries, technologies });
+    return NextResponse.json({ services, solutions, industries, technologies, locations });
   }
 
   const rows = await listEntities(kind);
@@ -55,13 +57,10 @@ export const POST = withAdmin(async (request: NextRequest) => {
   };
 
   if (body.action === "ensure-page" && body.kind && body.slug) {
-    if (!["SERVICE", "SOLUTION", "INDUSTRY", "TECHNOLOGY"].includes(body.kind)) {
+    if (!isCrudKind(body.kind)) {
       return NextResponse.json({ error: "Unsupported kind" }, { status: 400 });
     }
-    const page = await ensureEntityPage(
-      body.kind as "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
-      body.slug,
-    );
+    const page = await ensureEntityPage(body.kind, body.slug);
     if (!page) return NextResponse.json({ error: "Entity not found" }, { status: 404 });
     void logActivity({ entityType: "cms-entities", entityId: page.id, action: "created", summary: `Ensured entity page for ${body.kind} "${body.slug}"` });
     return NextResponse.json(page);

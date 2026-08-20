@@ -24,6 +24,7 @@ enum PageType {
   SOLUTION
   INDUSTRY
   TECHNOLOGY
+  LOCATION
   PRICING
   CASE_STUDY
   BLOG
@@ -61,6 +62,7 @@ enum EntityKind {
   SOLUTION
   INDUSTRY
   TECHNOLOGY
+  LOCATION
   AUTHOR
   CLIENT
   CATEGORY
@@ -408,6 +410,25 @@ model Solution {
 }
 
 model Industry {
+  id          String   @id @default(cuid()) @map("_id")
+  slug        String   @unique
+  name        String
+  summary     String?
+  description String?
+  icon        String?
+  category    String?
+  parentId    String?
+  sortOrder   Int      @default(0)
+  pageId      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([parentId])
+}
+
+model Location {
   id          String   @id @default(cuid()) @map("_id")
   slug        String   @unique
   name        String

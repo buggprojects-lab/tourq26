@@ -7,6 +7,7 @@ export const ENTITY_KINDS = [
   "SOLUTION",
   "INDUSTRY",
   "TECHNOLOGY",
+  "LOCATION",
 ] as const satisfies readonly EntityKind[];
 
 export type SeedEntity = {
@@ -69,6 +70,24 @@ export const SEED_INDUSTRIES: SeedEntity[] = [
   { slug: "automotive", name: "Automotive" },
 ];
 
+export const SEED_LOCATIONS: SeedEntity[] = [
+  {
+    slug: "software-development-company-india",
+    name: "India",
+    summary: "Software development delivered from India, for clients worldwide.",
+  },
+  {
+    slug: "software-development-company-mumbai",
+    name: "Mumbai",
+    summary: "Torq Studio's home base — software development delivered from Mumbai.",
+  },
+  {
+    slug: "software-development-company-ahmedabad",
+    name: "Ahmedabad",
+    summary: "Software development for Ahmedabad and Gujarat-based businesses.",
+  },
+];
+
 export const SEED_TECHNOLOGIES: SeedEntity[] = [
   { slug: "react", name: "React", category: "Frontend" },
   { slug: "next-js", name: "Next.js", category: "Frontend" },
@@ -104,6 +123,8 @@ export async function listEntities(kind: EntityKind) {
       return withDbTimeout(prisma.industry.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     case "TECHNOLOGY":
       return withDbTimeout(prisma.technology.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
+    case "LOCATION":
+      return withDbTimeout(prisma.location.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
     default:
       return [];
   }
@@ -115,7 +136,9 @@ type EntityDelegate = {
   delete: (args: { where: { id: string } }) => Promise<unknown>;
 };
 
-function entityDelegate(kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY"): EntityDelegate {
+type ManagedEntityKind = "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY" | "LOCATION";
+
+function entityDelegate(kind: ManagedEntityKind): EntityDelegate {
   switch (kind) {
     case "SERVICE":
       return prisma.service as unknown as EntityDelegate;
@@ -125,6 +148,8 @@ function entityDelegate(kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY"
       return prisma.industry as unknown as EntityDelegate;
     case "TECHNOLOGY":
       return prisma.technology as unknown as EntityDelegate;
+    case "LOCATION":
+      return prisma.location as unknown as EntityDelegate;
   }
 }
 
@@ -139,7 +164,7 @@ export type EntityInput = {
 };
 
 export async function createEntity(
-  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  kind: ManagedEntityKind,
   input: EntityInput,
 ) {
   const slug = slugify(input.slug?.trim() || input.name);
@@ -158,7 +183,7 @@ export async function createEntity(
 }
 
 export async function updateEntity(
-  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  kind: ManagedEntityKind,
   id: string,
   input: Partial<EntityInput>,
 ) {
@@ -174,7 +199,7 @@ export async function updateEntity(
 }
 
 export async function deleteEntity(
-  kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+  kind: ManagedEntityKind,
   id: string,
 ) {
   return entityDelegate(kind).delete({ where: { id } });
@@ -289,15 +314,30 @@ export async function seedCmsEntities() {
     });
   }
 
+  order = 0;
+  for (const s of SEED_LOCATIONS) {
+    await prisma.location.upsert({
+      where: { slug: s.slug },
+      create: {
+        slug: s.slug,
+        name: s.name,
+        summary: s.summary ?? null,
+        sortOrder: order++,
+      },
+      update: { name: s.name, summary: s.summary ?? null },
+    });
+  }
+
   return {
     services: SEED_SERVICES.length,
     solutions: SEED_SOLUTIONS.length,
     industries: SEED_INDUSTRIES.length,
     technologies: SEED_TECHNOLOGIES.length,
+    locations: SEED_LOCATIONS.length,
   };
 }
 
-export async function ensureEntityPage(kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY", slug: string) {
+export async function ensureEntityPage(kind: ManagedEntityKind, slug: string) {
   const normalized = slugify(slug);
   let entity:
     | { id: string; name: string; summary: string | null; pageId: string | null }
@@ -309,6 +349,8 @@ export async function ensureEntityPage(kind: "SERVICE" | "SOLUTION" | "INDUSTRY"
     entity = await prisma.solution.findUnique({ where: { slug: normalized } });
   } else if (kind === "INDUSTRY") {
     entity = await prisma.industry.findUnique({ where: { slug: normalized } });
+  } else if (kind === "LOCATION") {
+    entity = await prisma.location.findUnique({ where: { slug: normalized } });
   } else {
     entity = await prisma.technology.findUnique({ where: { slug: normalized } });
   }
@@ -329,7 +371,9 @@ export async function ensureEntityPage(kind: "SERVICE" | "SOLUTION" | "INDUSTRY"
         ? "SOLUTION"
         : kind === "INDUSTRY"
           ? "INDUSTRY"
-          : "TECHNOLOGY";
+          : kind === "LOCATION"
+            ? "LOCATION"
+            : "TECHNOLOGY";
 
   const page = await createPage({
     title: entity.name,
@@ -378,6 +422,8 @@ export async function ensureEntityPage(kind: "SERVICE" | "SOLUTION" | "INDUSTRY"
     await prisma.solution.update({ where: { id: entity.id }, data: { pageId: page.id } });
   } else if (kind === "INDUSTRY") {
     await prisma.industry.update({ where: { id: entity.id }, data: { pageId: page.id } });
+  } else if (kind === "LOCATION") {
+    await prisma.location.update({ where: { id: entity.id }, data: { pageId: page.id } });
   } else {
     await prisma.technology.update({ where: { id: entity.id }, data: { pageId: page.id } });
   }

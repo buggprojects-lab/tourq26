@@ -18,13 +18,18 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     };
   }
 
+  const disallow = ["/admin", "/admin/", "/api/", "/api"];
+
   return {
     rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/admin", "/admin/", "/api/", "/api"],
-      },
+      { userAgent: "*", allow: "/", disallow },
+      // Explicitly allowed AI/answer-engine crawlers (AEO/GEO) — redundant with the
+      // "*" rule above, but named here so audits and future disallow rules don't
+      // accidentally block them by omission.
+      { userAgent: "GPTBot", allow: "/", disallow },
+      { userAgent: "ClaudeBot", allow: "/", disallow },
+      { userAgent: "PerplexityBot", allow: "/", disallow },
+      { userAgent: "Google-Extended", allow: "/", disallow },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };

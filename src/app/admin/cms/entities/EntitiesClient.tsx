@@ -15,13 +15,14 @@ type EntityRow = {
   sortOrder?: number;
 };
 
-type Tab = "services" | "solutions" | "industries" | "technologies";
+type Tab = "services" | "solutions" | "industries" | "technologies" | "locations";
 
 const KIND_MAP = {
   services: "SERVICE",
   solutions: "SOLUTION",
   industries: "INDUSTRY",
   technologies: "TECHNOLOGY",
+  locations: "LOCATION",
 } as const;
 
 type FormState = {
@@ -54,6 +55,7 @@ export function EntitiesClient({
     solutions: EntityRow[];
     industries: EntityRow[];
     technologies: EntityRow[];
+    locations: EntityRow[];
   };
 }) {
   const router = useRouter();
@@ -66,7 +68,7 @@ export function EntitiesClient({
   const [newForm, setNewForm] = useState<FormState>(EMPTY_FORM);
 
   async function ensurePage(
-    kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY",
+    kind: "SERVICE" | "SOLUTION" | "INDUSTRY" | "TECHNOLOGY" | "LOCATION",
     slug: string,
   ) {
     setBusy(true);
@@ -182,7 +184,9 @@ export function EntitiesClient({
         ? initial.solutions
         : tab === "industries"
           ? initial.industries
-          : initial.technologies;
+          : tab === "technologies"
+            ? initial.technologies
+            : initial.locations;
 
   return (
     <div className="mt-8 space-y-6">
@@ -197,6 +201,7 @@ export function EntitiesClient({
             ["solutions", "Solutions"],
             ["industries", "Industries"],
             ["technologies", "Technologies"],
+            ["locations", "Locations"],
           ] as const
         ).map(([id, label]) => (
           <button

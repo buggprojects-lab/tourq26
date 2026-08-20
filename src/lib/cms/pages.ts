@@ -34,6 +34,8 @@ export function pathFor(type: PageType, slug: string): string {
       return `/industries/${s}`;
     case "TECHNOLOGY":
       return `/technologies/${s}`;
+    case "LOCATION":
+      return `/locations/${s}`;
     case "PRICING":
       return `/pricing/${s}`;
     case "CASE_STUDY":

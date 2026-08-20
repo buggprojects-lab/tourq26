@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { BlockRenderer } from "@/components/cms/BlockRenderer";
 import { getSiteUrl } from "@/lib/site-url";
+import { readSiteContent } from "@/lib/content";
 import { breadcrumbListJsonLd, webPageJsonLd } from "@/lib/seo";
 import { SupportingProseSection } from "@/components/marketing/SupportingProseSection";
 import { getEntityCatalogCards } from "@/lib/entity-catalog";
@@ -45,8 +46,8 @@ export default async function ServicesIndexPage() {
   try {
     const cms = await getPublishedPageByPath("/services");
     if (cms) {
-      const siteUrl = await getSiteUrl();
-      const schemas = buildPageJsonLd(cms, siteUrl);
+      const [siteUrl, site] = await Promise.all([getSiteUrl(), readSiteContent()]);
+      const schemas = buildPageJsonLd(cms, siteUrl, site.siteName);
       const blocks = getPageBlocks(cms);
       return (
         <div className="min-h-screen bg-background">

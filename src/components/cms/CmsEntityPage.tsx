@@ -8,6 +8,7 @@ import { RelatedContentSection } from "@/components/marketing/RelatedContentSect
 import { getPublishedPageByPath, getPageBlocks } from "@/lib/cms/pages";
 import { buildPageJsonLd, buildPageMetadata } from "@/lib/cms/metadata";
 import { getSiteUrl } from "@/lib/site-url";
+import { readSiteContent } from "@/lib/content";
 import { getRelatedContentGroups } from "@/lib/related-links";
 
 export async function cmsPageMetadata(path: string): Promise<Metadata> {
@@ -30,8 +31,8 @@ export async function CmsEntityPage({ path }: { path: string }) {
   }
   if (!page) notFound();
 
-  const siteUrl = await getSiteUrl();
-  const schemas = buildPageJsonLd(page, siteUrl);
+  const [siteUrl, site] = await Promise.all([getSiteUrl(), readSiteContent()]);
+  const schemas = buildPageJsonLd(page, siteUrl, site.siteName);
   const blocks = getPageBlocks(page);
   const relatedGroups = await getRelatedContentGroups({ path: page.path });
 
