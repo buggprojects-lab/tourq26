@@ -142,7 +142,7 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       {googleFontsSlugs.length || cssVarOverrides.length ? (
         <head>
           {googleFontsSlugs.length ? (

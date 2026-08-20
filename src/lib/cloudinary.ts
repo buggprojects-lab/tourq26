@@ -52,3 +52,18 @@ export async function deleteFromCloudinary(
   ensureConfigured();
   await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 }
+
+/** Looks the asset up on Cloudinary directly, so stale DB rows (deleted from the Cloudinary
+ *  dashboard, outside this app) can be flagged instead of silently 404ing. */
+export async function checkCloudinaryResource(
+  publicId: string,
+  resourceType: CloudinaryResourceType = "image",
+): Promise<{ exists: boolean; secureUrl?: string; bytes?: number; format?: string }> {
+  ensureConfigured();
+  try {
+    const result = await cloudinary.api.resource(publicId, { resource_type: resourceType });
+    return { exists: true, secureUrl: result.secure_url, bytes: result.bytes, format: result.format };
+  } catch {
+    return { exists: false };
+  }
+}
