@@ -10,6 +10,7 @@
 export const ANALYTICS_EVENTS = [
   "page_view",
   "business_systems_view",
+  "torqos_view",
   "cta_click",
   "audit_form_start",
   "audit_form_step_1",

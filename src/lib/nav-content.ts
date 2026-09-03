@@ -12,6 +12,7 @@ const NAV_KEY = "primary";
  *  returns, it has no separate hardcoded copy of its own. */
 function getDefaultNavLinks(): NavLink[] {
   return [
+    { label: "torqOS", href: "/torqos", openInNewTab: false },
     { label: "About", href: "/about", openInNewTab: false },
     { label: "Services", href: "/services", openInNewTab: false },
     { label: "Solutions", href: "/solutions", openInNewTab: false },

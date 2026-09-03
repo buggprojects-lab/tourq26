@@ -6,6 +6,7 @@ export const FEATURE_FLAG_KEYS = [
   "floating_chat_assistant",
   "dev_tools_code_playground",
   "business_systems_audit",
+  "torqos_landing",
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
@@ -79,6 +80,14 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     category: "Marketing",
     defaultEnabled: true,
     envOverride: "FF_BUSINESS_SYSTEMS_AUDIT",
+  },
+  {
+    key: "torqos_landing",
+    label: "torqOS product landing page",
+    description: "/torqos — the torqOS business operating system product page.",
+    category: "Marketing",
+    defaultEnabled: true,
+    envOverride: "FF_TORQOS_LANDING",
   },
 ] as const;
 

@@ -53,6 +53,7 @@ export function AdminSidebar({
         { href: "/admin/case-studies", label: "Case studies", badge: caseStudyCount },
         { href: "/admin/tech-news", label: "Tech news", badge: techNewsCount },
         { href: "/admin/testimonials", label: "Testimonials" },
+        { href: "/admin/pricing", label: "Pricing" },
       ],
     },
     {
