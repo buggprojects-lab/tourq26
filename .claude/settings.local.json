@@ -126,7 +126,12 @@
       "Bash(kill 9225)",
       "Bash(mkdir -p \"src/app/__probe404/[slug]\")",
       "Bash(cat)",
-      "Bash(/usr/bin/curl -sv \"http://localhost:3000/probe404test/ok-value\")"
+      "Bash(/usr/bin/curl -sv \"http://localhost:3000/probe404test/ok-value\")",
+      "Bash(cp /tmp/check_industries.mjs ./check_industries.mjs)",
+      "Bash(rm -f check_industries.mjs)",
+      "Bash(grep -o \"CASE LIBRARY.\\\\{0,2000\\\\}\" /tmp/cs_page.html)",
+      "Bash(kill 1915)",
+      "Bash(disown)"
     ]
   }
 }

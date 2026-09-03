@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { getCaseStudyBySlug } from "@/lib/case-studies-content";
+import { listEntities } from "@/lib/cms/entities";
 import { CaseStudyForm } from "../../CaseStudyForm";
 import { AdminPageHeader } from "../../../AdminPageHeader";
 
@@ -13,7 +14,7 @@ export default async function EditCaseStudyPage({
   if (!ok) redirect("/admin");
 
   const { slug } = await params;
-  const item = await getCaseStudyBySlug(slug);
+  const [item, industries] = await Promise.all([getCaseStudyBySlug(slug), listEntities("INDUSTRY")]);
   if (!item) notFound();
 
   return (
@@ -27,7 +28,7 @@ export default async function EditCaseStudyPage({
         title="Edit case study"
         description="Save changes anytime — updates go live immediately."
       />
-      <CaseStudyForm key={item.slug} item={item} />
+      <CaseStudyForm key={item.slug} item={item} availableIndustries={industries.map((i) => i.name)} />
     </div>
   );
 }

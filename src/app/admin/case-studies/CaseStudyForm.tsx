@@ -57,6 +57,7 @@ const emptyCaseStudy: CaseStudy = {
   seoTitle: "",
   client: "",
   industry: "",
+  industries: [],
   challenge: "",
   outcome: "",
   metric: "",
@@ -71,7 +72,13 @@ const emptyCaseStudy: CaseStudy = {
   body: "",
 };
 
-export function CaseStudyForm({ item }: { item?: CaseStudy }) {
+export function CaseStudyForm({
+  item,
+  availableIndustries = [],
+}: {
+  item?: CaseStudy;
+  availableIndustries?: string[];
+}) {
   const router = useRouter();
   const isNew = !item;
 
@@ -182,6 +189,30 @@ export function CaseStudyForm({ item }: { item?: CaseStudy }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Client" value={data.client} onChange={(v) => update("client", v)} placeholder="Confidential · FinTech" />
           <Field label="Industry" value={data.industry} onChange={(v) => update("industry", v)} placeholder="Financial services · UAE" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground/90">
+            Industry filter tags (shown as filters on the case studies page)
+          </label>
+          <div className="mt-1">
+            <TagInput value={data.industries} onChange={(v) => update("industries", v)} placeholder="Add an industry…" max={6} />
+          </div>
+          {availableIndustries.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {availableIndustries
+                .filter((name) => !data.industries.includes(name))
+                .map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => update("industries", [...data.industries, name])}
+                    className="mono-label rounded-full border border-hairline px-2 py-0.5 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+                  >
+                    + {name}
+                  </button>
+                ))}
+            </div>
+          ) : null}
         </div>
         <Field label="Challenge" value={data.challenge} onChange={(v) => update("challenge", v)} textarea rows={2} />
         <Field label="Outcome" value={data.outcome} onChange={(v) => update("outcome", v)} textarea rows={2} />

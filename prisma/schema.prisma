@@ -808,6 +808,7 @@ model CaseStudyPost {
   seoTitle    String?
   client      String
   industry    String
+  industries  String[] @default([])
   challenge   String
   outcome     String
   metric      String

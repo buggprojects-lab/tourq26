@@ -28,6 +28,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
     seoTitle: raw.seoTitle,
     client: raw.client ?? "",
     industry: raw.industry ?? "",
+    industries: Array.isArray(raw.industries) ? raw.industries : [],
     challenge: raw.challenge ?? "",
     outcome: raw.outcome ?? "",
     metric: raw.metric ?? "",

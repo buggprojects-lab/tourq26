@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
+import { listEntities } from "@/lib/cms/entities";
 import { CaseStudyForm } from "../CaseStudyForm";
 import { AdminPageHeader } from "../../AdminPageHeader";
 
 export default async function NewCaseStudyPage() {
   const ok = await isAdmin();
   if (!ok) redirect("/admin");
+
+  const industries = await listEntities("INDUSTRY");
 
   return (
     <div>
@@ -18,7 +21,7 @@ export default async function NewCaseStudyPage() {
         title="New case study"
         description="Slug auto-generates from the title."
       />
-      <CaseStudyForm />
+      <CaseStudyForm availableIndustries={industries.map((i) => i.name)} />
     </div>
   );
 }

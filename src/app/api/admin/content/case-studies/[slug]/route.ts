@@ -41,6 +41,7 @@ export const PUT = withAdmin(async (
     seoTitle: raw.seoTitle ?? current.seoTitle,
     client: raw.client ?? current.client,
     industry: raw.industry ?? current.industry,
+    industries: Array.isArray(raw.industries) ? raw.industries : current.industries,
     challenge: raw.challenge ?? current.challenge,
     outcome: raw.outcome ?? current.outcome,
     metric: raw.metric ?? current.metric,

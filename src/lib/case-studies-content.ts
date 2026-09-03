@@ -7,6 +7,8 @@ export type CaseStudy = {
   seoTitle?: string;
   client: string;
   industry: string;
+  /** Industry taxonomy tags (canonical names) used for filtering the case studies index. */
+  industries: string[];
   challenge: string;
   outcome: string;
   metric: string;
@@ -28,6 +30,7 @@ function toCaseStudy(row: {
   seoTitle: string | null;
   client: string;
   industry: string;
+  industries: string[];
   challenge: string;
   outcome: string;
   metric: string;
@@ -47,6 +50,7 @@ function toCaseStudy(row: {
     seoTitle: row.seoTitle ?? undefined,
     client: row.client,
     industry: row.industry,
+    industries: row.industries,
     challenge: row.challenge,
     outcome: row.outcome,
     metric: row.metric,
@@ -93,6 +97,7 @@ export async function writeCaseStudies(items: CaseStudy[]): Promise<void> {
           seoTitle: c.seoTitle,
           client: c.client,
           industry: c.industry,
+          industries: c.industries ?? [],
           challenge: c.challenge,
           outcome: c.outcome,
           metric: c.metric,
@@ -112,6 +117,7 @@ export async function writeCaseStudies(items: CaseStudy[]): Promise<void> {
           seoTitle: c.seoTitle,
           client: c.client,
           industry: c.industry,
+          industries: c.industries ?? [],
           challenge: c.challenge,
           outcome: c.outcome,
           metric: c.metric,
