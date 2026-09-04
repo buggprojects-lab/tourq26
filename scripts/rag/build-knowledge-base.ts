@@ -72,10 +72,22 @@ async function collectSourceDocs(): Promise<SourceDoc[]> {
   }
 
   for (const plan of pricingPlans) {
+    const blob = (plan.features && typeof plan.features === "object" ? plan.features : {}) as {
+      items?: unknown;
+      monthlyPrice?: unknown;
+      discountPercent?: unknown;
+    };
+    const monthlyPrice = Number(blob.monthlyPrice) || 0;
+    const discountPercent = Number(blob.discountPercent) || 0;
+    const finalMonthly = monthlyPrice * (1 - discountPercent / 100);
+    const priceText =
+      monthlyPrice > 0
+        ? `${plan.currency ?? "₹"}${Math.round(finalMonthly)}/month${discountPercent > 0 ? ` (${discountPercent}% off the ${plan.currency ?? "₹"}${monthlyPrice} list price)` : ""}`
+        : "";
     const parts = [
       plan.summary ?? "",
-      plan.priceLabel ?? "",
-      plan.features ? JSON.stringify(plan.features) : "",
+      priceText,
+      Array.isArray(blob.items) ? JSON.stringify(blob.items) : "",
     ].filter(Boolean);
     if (!parts.length) continue;
     docs.push({

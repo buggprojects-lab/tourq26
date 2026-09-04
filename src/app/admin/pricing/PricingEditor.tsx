@@ -12,9 +12,10 @@ function newPlan(): PricingPlan {
     slug: "",
     name: "",
     summary: "",
-    currency: "$",
-    priceLabel: "",
-    period: "/month",
+    currency: "₹",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    discountPercent: 0,
     features: [],
     ctaLabel: "Book a Demo",
     ctaHref: "/contact",
@@ -126,29 +127,47 @@ export function PricingEditor({ initialItems }: { initialItems: PricingPlan[] })
                 type="text"
                 value={item.currency}
                 onChange={(e) => update(index, "currency", e.target.value)}
-                placeholder="$"
+                placeholder="₹"
                 className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm text-muted-foreground">Price</label>
+              <label className="block text-sm text-muted-foreground">Monthly base price</label>
               <input
-                type="text"
-                value={item.priceLabel}
-                onChange={(e) => update(index, "priceLabel", e.target.value)}
-                placeholder="999"
+                type="number"
+                value={item.monthlyPrice}
+                onChange={(e) => update(index, "monthlyPrice", Number(e.target.value))}
+                placeholder="16650"
                 className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm text-muted-foreground">Billing period</label>
+              <label className="block text-sm text-muted-foreground">Yearly base price</label>
               <input
-                type="text"
-                value={item.period}
-                onChange={(e) => update(index, "period", e.target.value)}
-                placeholder="/month"
+                type="number"
+                value={item.yearlyPrice}
+                onChange={(e) => update(index, "yearlyPrice", Number(e.target.value))}
+                placeholder="166500"
                 className={inputClass}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <label className="block text-sm text-muted-foreground">Offer discount %</label>
+              <input
+                type="number"
+                min={0}
+                max={90}
+                value={item.discountPercent}
+                onChange={(e) => update(index, "discountPercent", Number(e.target.value))}
+                placeholder="40"
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                0 = no offer badge. The price shown on the site is the base price minus this %.
+              </p>
             </div>
           </div>
 

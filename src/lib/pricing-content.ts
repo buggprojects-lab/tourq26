@@ -6,9 +6,12 @@ export type PricingPlan = {
   name: string;
   summary: string;
   currency: string;
-  priceLabel: string;
-  /** Billing cadence shown after the price, e.g. "/month". */
-  period: string;
+  /** Base (pre-discount) price billed monthly. */
+  monthlyPrice: number;
+  /** Base (pre-discount) price billed yearly (in total, not per-month). */
+  yearlyPrice: number;
+  /** Offer discount applied to the base price for display, e.g. 40 = 40% off. 0 = no offer. */
+  discountPercent: number;
   features: string[];
   ctaLabel: string;
   ctaHref: string;
@@ -20,29 +23,52 @@ export type PricingPlan = {
 
 /**
  * `PricingPlan.features` is a free-form Prisma `Json?` column. We pack the
- * per-plan display extras (period, highlighted) into it alongside the feature
- * list rather than adding dedicated columns, since nothing else reads this
- * model yet — keeps the schema untouched while still giving admins full
- * control over every field below.
+ * per-plan display extras (monthly/yearly base price, discount, highlighted)
+ * into it alongside the feature list rather than adding dedicated columns,
+ * since nothing else reads this model yet — keeps the schema untouched while
+ * still giving admins full control over every field below.
  */
 type FeaturesBlobRaw = {
   items?: unknown;
-  period?: unknown;
+  monthlyPrice?: unknown;
+  yearlyPrice?: unknown;
+  discountPercent?: unknown;
   highlighted?: unknown;
 };
 
-type FeaturesBlobOut = { items: string[]; period: string; highlighted: boolean };
+type FeaturesBlobOut = {
+  items: string[];
+  monthlyPrice: number;
+  yearlyPrice: number;
+  discountPercent: number;
+  highlighted: boolean;
+};
+
+function toNumber(value: unknown, fallback: number): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 function parseFeaturesBlob(raw: unknown): FeaturesBlobOut {
   const blob = (raw && typeof raw === "object" ? raw : {}) as FeaturesBlobRaw;
   const items = Array.isArray(blob.items) ? blob.items.filter((x): x is string => typeof x === "string") : [];
-  const period = typeof blob.period === "string" ? blob.period : "/month";
+  const monthlyPrice = toNumber(blob.monthlyPrice, 0);
+  const yearlyPrice = toNumber(blob.yearlyPrice, 0);
+  const discountPercent = toNumber(blob.discountPercent, 0);
   const highlighted = blob.highlighted === true;
-  return { items, period, highlighted };
+  return { items, monthlyPrice, yearlyPrice, discountPercent, highlighted };
 }
 
-function toFeaturesBlob(plan: Pick<PricingPlan, "features" | "period" | "highlighted">): FeaturesBlobOut {
-  return { items: plan.features, period: plan.period, highlighted: plan.highlighted };
+function toFeaturesBlob(
+  plan: Pick<PricingPlan, "features" | "monthlyPrice" | "yearlyPrice" | "discountPercent" | "highlighted">,
+): FeaturesBlobOut {
+  return {
+    items: plan.features,
+    monthlyPrice: plan.monthlyPrice,
+    yearlyPrice: plan.yearlyPrice,
+    discountPercent: plan.discountPercent,
+    highlighted: plan.highlighted,
+  };
 }
 
 function toPricingPlan(row: {
@@ -58,15 +84,16 @@ function toPricingPlan(row: {
   sortOrder: number;
   isActive: boolean;
 }): PricingPlan {
-  const { items, period, highlighted } = parseFeaturesBlob(row.features);
+  const { items, monthlyPrice, yearlyPrice, discountPercent, highlighted } = parseFeaturesBlob(row.features);
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     summary: row.summary ?? "",
-    currency: row.currency ?? "$",
-    priceLabel: row.priceLabel ?? "",
-    period,
+    currency: row.currency ?? "₹",
+    monthlyPrice,
+    yearlyPrice,
+    discountPercent,
     features: items,
     ctaLabel: row.ctaLabel ?? "Book a Demo",
     ctaHref: row.ctaHref ?? "/contact",
@@ -82,9 +109,10 @@ export const DEFAULT_PRICING_PLANS: PricingPlan[] = [
     slug: "starter",
     name: "Starter",
     summary: "For small teams ready to get off spreadsheets.",
-    currency: "$",
-    priceLabel: "499",
-    period: "/month",
+    currency: "₹",
+    monthlyPrice: 8325,
+    yearlyPrice: 83250,
+    discountPercent: 40,
     features: ["CRM & pipeline", "Job management", "Up to 5 team members", "Email support"],
     ctaLabel: "Book a Demo",
     ctaHref: "/contact",
@@ -97,9 +125,10 @@ export const DEFAULT_PRICING_PLANS: PricingPlan[] = [
     slug: "growth",
     name: "Growth",
     summary: "For growing teams that need everything connected.",
-    currency: "$",
-    priceLabel: "999",
-    period: "/month",
+    currency: "₹",
+    monthlyPrice: 16650,
+    yearlyPrice: 166500,
+    discountPercent: 40,
     features: [
       "Everything in Starter",
       "Finance dashboard & reporting",
@@ -118,9 +147,10 @@ export const DEFAULT_PRICING_PLANS: PricingPlan[] = [
     slug: "scale",
     name: "Scale",
     summary: "For multi-location operations running at full scale.",
-    currency: "$",
-    priceLabel: "1,599",
-    period: "/month",
+    currency: "₹",
+    monthlyPrice: 26650,
+    yearlyPrice: 266500,
+    discountPercent: 40,
     features: [
       "Everything in Growth",
       "CMS & website",
@@ -189,7 +219,6 @@ export async function writePricingPlans(items: PricingPlan[]): Promise<PricingPl
           name: p.name,
           summary: p.summary,
           currency: p.currency,
-          priceLabel: p.priceLabel,
           features: toFeaturesBlob(p),
           ctaLabel: p.ctaLabel,
           ctaHref: p.ctaHref,
@@ -200,7 +229,6 @@ export async function writePricingPlans(items: PricingPlan[]): Promise<PricingPl
           name: p.name,
           summary: p.summary,
           currency: p.currency,
-          priceLabel: p.priceLabel,
           features: toFeaturesBlob(p),
           ctaLabel: p.ctaLabel,
           ctaHref: p.ctaHref,
