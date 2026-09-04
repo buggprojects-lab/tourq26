@@ -303,3 +303,11 @@ export function TicketIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <polyline points="6 9.5 12 15 18 9.5" />
+    </svg>
+  );
+}

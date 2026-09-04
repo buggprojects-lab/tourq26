@@ -10,6 +10,8 @@ import { readPricingPlans } from "@/lib/pricing-content";
 import { requireMarketingFeature } from "@/lib/require-marketing-feature";
 import TorqosAnalytics from "./TorqosAnalytics";
 import DemoCta from "./DemoCta";
+import PlatformExplorer from "./PlatformExplorer";
+import ModulesAccordion from "./ModulesAccordion";
 import {
   BriefcaseIcon,
   CartIcon,
@@ -66,19 +68,149 @@ const PROBLEMS = [
 ];
 
 const MODULES = [
-  { title: "Dashboard, Reports & Analytics", short: "REPORTS", desc: "Live dashboards leadership can actually trust, built from real-time data.", Icon: TrendingUpIcon },
-  { title: "Job Management", short: "JOBS", desc: "Track every job from assignment to completion, with full visibility for your team.", Icon: ChecklistIcon },
-  { title: "Catalog", short: "CATALOG", desc: "One shared catalog of products and services, always up to date.", Icon: CatalogIcon },
-  { title: "Technician Management", short: "TECH", desc: "Schedule, dispatch, and track technicians against every job.", Icon: TechnicianIcon },
-  { title: "Team Management", short: "TEAM", desc: "Roles, attendance, and performance for your whole team in one place.", Icon: UsersIcon },
-  { title: "Quotation", short: "QUOTES", desc: "Create, send, and track quotations that turn into jobs automatically.", Icon: ReceiptIcon },
-  { title: "CRM", short: "CRM", desc: "Every lead, deal, and customer relationship in one shared system.", Icon: ContactCardIcon },
-  { title: "CMS", short: "CMS", desc: "Manage the content behind your customer-facing pages without a developer.", Icon: LayersIcon },
-  { title: "AMC", short: "AMC", desc: "Track annual maintenance contracts, renewals, and service schedules.", Icon: ShieldCheckIcon },
-  { title: "Finance", short: "FINANCE", desc: "Real-time visibility into revenue, costs, and cash flow.", Icon: WalletIcon },
-  { title: "Marketing", short: "MARKET", desc: "Run campaigns and track what's actually driving new business.", Icon: MegaphoneIcon },
-  { title: "Website", short: "WEBSITE", desc: "Your public site, connected to the same data as the rest of torqOS.", Icon: GlobeIcon },
-  { title: "Ticket Manager", short: "TICKETS", desc: "Log, assign, and resolve customer support tickets end to end.", Icon: TicketIcon },
+  {
+    title: "Dashboard, Reports & Analytics",
+    short: "REPORTS",
+    desc: "Live dashboards leadership can actually trust, built from real-time data.",
+    Icon: TrendingUpIcon,
+    bullets: [
+      "Real-time revenue, job, and pipeline dashboards",
+      "Custom reports without waiting on a developer",
+      "Role-based views for leadership vs. field teams",
+    ],
+  },
+  {
+    title: "Job Management",
+    short: "JOBS",
+    desc: "Track every job from assignment to completion, with full visibility for your team.",
+    Icon: ChecklistIcon,
+    bullets: [
+      "Assign, schedule, and track jobs end to end",
+      "Live status updates technicians can see",
+      "Job history tied to every customer record",
+    ],
+  },
+  {
+    title: "Catalog",
+    short: "CATALOG",
+    desc: "One shared catalog of products and services, always up to date.",
+    Icon: CatalogIcon,
+    bullets: [
+      "One source of truth for products and services",
+      "Pricing and availability always in sync",
+      "Shared across quotes, jobs, and invoices",
+    ],
+  },
+  {
+    title: "Technician Management",
+    short: "TECH",
+    desc: "Schedule, dispatch, and track technicians against every job.",
+    Icon: TechnicianIcon,
+    bullets: [
+      "Schedule and dispatch by skill and location",
+      "Track hours, jobs completed, and utilization",
+      "Mobile-friendly for field updates",
+    ],
+  },
+  {
+    title: "Team Management",
+    short: "TEAM",
+    desc: "Roles, attendance, and performance for your whole team in one place.",
+    Icon: UsersIcon,
+    bullets: [
+      "Roles and permissions per team member",
+      "Attendance and performance tracking",
+      "Onboard new hires without spreadsheets",
+    ],
+  },
+  {
+    title: "Quotation",
+    short: "QUOTES",
+    desc: "Create, send, and track quotations that turn into jobs automatically.",
+    Icon: ReceiptIcon,
+    bullets: [
+      "Branded quotes sent in minutes",
+      "Accepted quotes convert into jobs automatically",
+      "Track open, sent, and won quotes",
+    ],
+  },
+  {
+    title: "CRM",
+    short: "CRM",
+    desc: "Every lead, deal, and customer relationship in one shared system.",
+    Icon: ContactCardIcon,
+    bullets: [
+      "Every lead and deal in one pipeline",
+      "Full contact and interaction history",
+      "No more leads lost in someone's inbox",
+    ],
+  },
+  {
+    title: "CMS",
+    short: "CMS",
+    desc: "Manage the content behind your customer-facing pages without a developer.",
+    Icon: LayersIcon,
+    bullets: [
+      "Edit website content without a developer",
+      "Publish updates instantly",
+      "Same content system across every page",
+    ],
+  },
+  {
+    title: "AMC",
+    short: "AMC",
+    desc: "Track annual maintenance contracts, renewals, and service schedules.",
+    Icon: ShieldCheckIcon,
+    bullets: [
+      "Track contract renewals before they lapse",
+      "Automated service-schedule reminders",
+      "Full history per contract and customer",
+    ],
+  },
+  {
+    title: "Finance",
+    short: "FINANCE",
+    desc: "Real-time visibility into revenue, costs, and cash flow.",
+    Icon: WalletIcon,
+    bullets: [
+      "Live revenue, cost, and margin visibility",
+      "Invoices and payments in one place",
+      "No more waiting on finance for numbers",
+    ],
+  },
+  {
+    title: "Marketing",
+    short: "MARKET",
+    desc: "Run campaigns and track what's actually driving new business.",
+    Icon: MegaphoneIcon,
+    bullets: [
+      "Run and track campaigns in one place",
+      "See what's actually driving new business",
+      "Connects straight into the CRM pipeline",
+    ],
+  },
+  {
+    title: "Website",
+    short: "WEBSITE",
+    desc: "Your public site, connected to the same data as the rest of torqOS.",
+    Icon: GlobeIcon,
+    bullets: [
+      "Your public site on the same data as the rest of torqOS",
+      "No separate CMS or hosting to manage",
+      "Updates reflect instantly across the business",
+    ],
+  },
+  {
+    title: "Ticket Manager",
+    short: "TICKETS",
+    desc: "Log, assign, and resolve customer support tickets end to end.",
+    Icon: TicketIcon,
+    bullets: [
+      "Log, assign, and resolve tickets end to end",
+      "SLA and priority tracking built in",
+      "Full history tied to the customer record",
+    ],
+  },
 ];
 
 /** First 6 modules, used for the compact hero sidebar mockup — not the full list. */
@@ -98,9 +230,9 @@ const WHO_ITS_FOR = [
 ];
 
 const STAT_TILES = [
-  { label: "PIPELINE", bars: [35, 55, 40, 65, 60, 85] },
-  { label: "REVENUE", bars: [30, 45, 50, 60, 75, 95] },
-  { label: "JOBS", bars: [55, 40, 65, 45, 80, 50] },
+  { label: "PIPELINE", value: "37 OPEN", bars: [35, 55, 40, 65, 60, 85] },
+  { label: "REVENUE", value: "$148,320", bars: [30, 45, 50, 60, 75, 95] },
+  { label: "JOBS", value: "212", bars: [55, 40, 65, 45, 80, 50] },
 ];
 
 const ACTIVITY_ROWS = [
@@ -187,6 +319,9 @@ export default async function TorqosPage() {
                         {STAT_TILES.map((stat) => (
                           <div key={stat.label} className="rounded-[4px] border border-white/10 p-2 sm:p-3">
                             <p className="mono-label text-[9px] text-white/35 sm:text-[10px]">{stat.label}</p>
+                            <p className="mt-1.5 truncate text-[13px] font-medium text-white sm:text-[14px]">
+                              {stat.value}
+                            </p>
                             <div className="mt-2 flex h-8 items-end gap-[3px] sm:mt-3">
                               {stat.bars.map((h, i) => (
                                 <span
@@ -317,24 +452,32 @@ export default async function TorqosPage() {
           </div>
         </section>
 
+        {/* Platform modules — interactive tab explorer */}
+        <section className="band-dark border-t border-hairline">
+          <div className="mx-auto w-full max-w-[1280px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-[80px]">
+            <p className="mono-eyebrow text-white/55">PLATFORM MODULES</p>
+            <h2 className="display-lg mt-4 max-w-2xl text-white">
+              See how each module fits into the same system.
+            </h2>
+            <PlatformExplorer />
+          </div>
+        </section>
+
         {/* Modules */}
         <section className="band-light border-t border-hairline">
           <div className="mx-auto w-full max-w-[1280px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-[80px]">
-            <p className="mono-eyebrow text-muted-foreground">WHAT&apos;S INSIDE</p>
-            <h2 className="display-lg mt-4 max-w-2xl text-foreground">
-              Everything your business needs to run, in one place.
-            </h2>
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {MODULES.map(({ title, desc, Icon }) => (
-                <div key={title} className="card-flat card-hover">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-hairline bg-background text-foreground/70">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <p className="mt-5 text-[16px] font-medium text-foreground">{title}</p>
-                  <p className="mt-2 text-[14px] leading-[1.5] text-muted-foreground">{desc}</p>
-                </div>
-              ))}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mono-eyebrow text-muted-foreground">WHAT&apos;S INSIDE</p>
+                <h2 className="display-lg mt-4 max-w-2xl text-foreground">
+                  Everything your business needs to run, in one place.
+                </h2>
+              </div>
+              <p className="mono-label text-muted-foreground/60">CLICK A MODULE TO EXPAND</p>
             </div>
+            <ModulesAccordion
+              modules={MODULES.map(({ title, short, desc, bullets }) => ({ title, short, desc, bullets }))}
+            />
           </div>
         </section>
 
